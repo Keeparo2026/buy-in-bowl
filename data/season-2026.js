@@ -8,13 +8,14 @@ window.SEASONS[2026] = {
   year: 2026,
   title: "The Buy-In Bowl II",
   status: "live", // "live" | "complete"
+  buyIn: 250,  // per manager, in $
   logo: "media/season-2026.jpg",
 
   // Set at the end of the season
   champion: null,      // { team: "", manager: "", record: "", note: "" }
   runnerUp: null,      // { team: "", manager: "" }
   lastPlace: null,     // { team: "", manager: "", punishment: "" }
-  pointsLeader: null,  // { team: "", points: 0 }
+  pointsLeader: null,  // { team: "", manager: "", points: 0 } — most points, regular season
 
   recap: "", // one or two sentences, written at the end
 
@@ -39,6 +40,16 @@ window.SEASONS[2026] = {
     }
   ],
 
+  /* Rank after every week, for the weekly power lines.
+     Each week: add one line with the team names in Yahoo's standings order.
+     The "Pre" column is built automatically from last season's final standings,
+     with new managers starting at the bottom. */
+  totalWeeks: 17,
+  rankHistory: [
+    { week: 1, order: ["Twerk", "Luckyballzz7", "Handegg United", "Cee Dees TeeDees", "TUSH PUSH",
+      "Take Me To Dinner First", "Rush Mode Isaac", "Julius's Juicemen", "Gin&Jukes", "HutMessXpress"] }
+  ],
+
   // Standings, currently after week 1
   standings: [
     { rank: 1, team: "Twerk", manager: "twerk", w: 1, l: 0, t: 0, pf: 148.36 },
@@ -55,6 +66,7 @@ window.SEASONS[2026] = {
 
   playoffs: {
     order: ["Quarterfinals", "Semifinals", "Final"],
+    weeks: { Quarterfinals: 15, Semifinals: 16, Final: 17 },
     byes: {},
     thirdPlaceRound: "Third place",
     // { round: "Semifinals", home: "", away: "", homeScore: 0, awayScore: 0 }

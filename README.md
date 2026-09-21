@@ -52,7 +52,14 @@ git push -u origin main
 In `data/season-2026.js`:
 
 1. **Tabelle** unter `standings` aktualisieren — Rang, Bilanz und Punkte aus Yahoo übernehmen
-2. Optional die Woche unter `weeks` ergänzen:
+2. **Wochenverlauf** unter `rankHistory` eine Zeile anhängen — die Teamnamen in der Reihenfolge der Yahoo-Tabelle:
+
+```js
+{ week: 2, order: ["Twerk", "Handegg United", "Luckyballzz7", ...] },
+```
+
+   Daraus zeichnen sich die wöchentlichen Power lines im 2026-Tab.
+3. Optional die Woche unter `weeks` ergänzen:
 
 ```js
 {

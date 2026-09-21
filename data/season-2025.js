@@ -15,17 +15,19 @@ window.SEASONS[2025] = {
   year: 2025,
   title: "The Buy-In Bowl I",
   status: "complete",
+  buyIn: 250,  // per manager, in $
   logo: "media/season-2025.png",
 
   champion: {
     team: "Handegg United",
     manager: "johannes",
     record: "10-4, 2 seed",
-    note: "$1,500 and the Buy-In Bowl I Championship Ring"
+    note: "$1,500 and the Buy-In Bowl I Championship Ring",
+    image: "media/champ-2025.jpg"   // picture for the champion card
   },
   runnerUp: { team: "HutMessXpress", manager: "hutmess" },
   lastPlace: { team: "TUSH PUSH", manager: "tush", punishment: "" },
-  pointsLeader: { team: "Twerk", points: 1668.82 },
+  pointsLeader: { team: "Twerk", manager: "twerk", points: 1668.82 },  // Most points, regular season
 
   recap: "Won from the 2 seed, 120.03 to 107.76 over HutMessXpress in the final.",
 
@@ -49,6 +51,7 @@ window.SEASONS[2025] = {
 
   playoffs: {
     order: ["Quarterfinals", "Semifinals", "Final"],
+    weeks: { Quarterfinals: 15, Semifinals: 16, Final: 17 },
     byes: { Quarterfinals: ["Cee Dees TeeDees", "Handegg United"] },
     thirdPlaceRound: "Third place",
     games: [
@@ -63,7 +66,19 @@ window.SEASONS[2025] = {
       { round: "Final", home: "HutMessXpress", away: "Handegg United",
         homeScore: 107.76, awayScore: 120.03, winner: "Handegg United" },
       { round: "Third place", home: "Twerk", away: "Cee Dees TeeDees",
-        homeScore: 121.35, awayScore: 120.98, winner: "Twerk" }
+        homeScore: 121.35, awayScore: 120.98, winner: "Twerk" },
+
+      /* Consolation bracket for places 7-10, weeks 16 and 17.
+         Results follow from the final placings (7 Dinner, 8 Jason, 9 Nathan, 10 Adam)
+         and match Yahoo's record book (Jason 13 losses). Pairings by seed 7v10, 8v9. */
+      { round: "Consolation semifinals", home: "David hat grosse manschaft", away: "Gamble Play Jason",
+        homeScore: null, awayScore: null, winner: "Gamble Play Jason", consolation: true },
+      { round: "Consolation semifinals", home: "TUSH PUSH", away: "Take Me To Dinner First",
+        homeScore: null, awayScore: null, winner: "Take Me To Dinner First", consolation: true },
+      { round: "7th place", home: "Take Me To Dinner First", away: "Gamble Play Jason",
+        homeScore: null, awayScore: null, winner: "Take Me To Dinner First", consolation: true },
+      { round: "9th place", home: "David hat grosse manschaft", away: "TUSH PUSH",
+        homeScore: null, awayScore: null, winner: "David hat grosse manschaft", consolation: true }
     ]
   },
 
