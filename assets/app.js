@@ -216,6 +216,7 @@
     }
 
     h += lineup();
+    h += formerMembers();
     h += '<div class="wordwall" aria-hidden="true"><span>BUY-IN BOWL</span></div>';
     return h;
   }
@@ -546,6 +547,35 @@
     return h + "</div>";
   }
 
+  /* Managers who played before but are not in the current season */
+  function formerMembers() {
+    var cur = years()[0];
+    var list = (L.managers || []).filter(function (m) {
+      return m.teams && !m.teams[cur] && Object.keys(m.teams).length;
+    });
+    if (!list.length) return "";
+    var h = '<div class="wrap"><section class="crew-block former-block">';
+    h += '<h2 class="sec">Former league members</h2><div class="crew">';
+    list.forEach(function (m) {
+      var ys = Object.keys(m.teams).sort();
+      var lastTeam = m.teams[ys[ys.length - 1]];
+      var label = esc(m.name || "") + ", " + esc(lastTeam);
+      if (has(m.card)) {
+        h += '<button type="button" class="crew-card" data-profile="' + m.id + '" aria-label="' + label + '">' +
+          '<img src="' + esc(m.card) + '" alt="" loading="lazy">' +
+          (m.country ? '<span class="crew-flag">' + flagSvg(m.country) + "</span>" : "") +
+          '<span class="former-years">' + ys.join(", ") + "</span></button>";
+      } else {
+        h += '<button type="button" class="crew-card former-card" data-profile="' + m.id + '" aria-label="' + label + '">' +
+          '<span class="fc-frame">' + (has(m.avatar) ? '<img src="' + esc(m.avatar) + '" alt="">' : "") + "</span>" +
+          (m.country ? '<span class="crew-flag">' + flagSvg(m.country) + "</span>" : "") +
+          '<span class="fc-label"><b>' + esc(m.name || "") + "</b><small>" + esc(lastTeam) + "</small></span>" +
+          '<span class="former-years">' + ys.join(", ") + "</span></button>";
+      }
+    });
+    return h + "</div></section></div>";
+  }
+
   /* ---------- All-time table ---------- */
   var mTab = "all";
   var mSort = { key: "power", dir: -1 };
@@ -755,6 +785,7 @@
   /* ---------- Power lines: all-time rank after each season ---------- */
   /* Available width of each chart, measured after the first render */
   var chartW = { all: 0, week: 0 };
+  var reflowDepth = 0;
   function powerRank(rows) {
     return rows.slice().sort(function (a, b) {
       return b.titles - a.titles || b.pf - a.pf || b.wins - a.wins ||
@@ -804,7 +835,9 @@
     ids.forEach(function (id) {
       s += '<clipPath id="plc-' + id + '"><circle r="10.5"/></clipPath>';
     });
-    s += '<filter id="pl-gray"><feColorMatrix type="saturate" values="0"/></filter></defs>';
+    s += '<filter id="pl-gray"><feColorMatrix type="saturate" values="0"/></filter>';
+    s += '<clipPath id="rv-all"><rect class="pl-reveal" x="0" y="0" width="' + W + '" height="' + H +
+      '" data-w="' + W + '" data-end="' + (xOf(yrs.length - 1) + 16) + '"/></clipPath></defs>';
 
     /* grid */
     for (var r = 1; r <= N; r++) {
@@ -835,12 +868,12 @@
         var a = pts[k - 1], b = pts[k];
         var xa = xOf(a.i), xb = xOf(b.i), ya = yOf(a.r), yb = yOf(b.r), mx = (xa + xb) / 2;
         var played = m.teams && m.teams[b.y];
-        s += '<path class="pl-line' + (played ? "" : " off") + '" d="M' + xa + " " + ya +
+        s += '<path class="pl-line' + (played ? "" : " off") + '" clip-path="url(#rv-all)" d="M' + xa + " " + ya +
           " C" + mx + " " + ya + " " + mx + " " + yb + " " + xb + " " + yb + '"/>';
       }
       pts.forEach(function (p, k) {
         if (k === pts.length - 1) return;
-        s += '<circle class="pl-dot" cx="' + xOf(p.i) + '" cy="' + yOf(p.r) + '" r="4"/>';
+        s += '<circle class="pl-dot" clip-path="url(#rv-all)" cx="' + xOf(p.i) + '" cy="' + yOf(p.r) + '" r="4"/>';
       });
 
       var e = pts[pts.length - 1], ex = xOf(e.i), ey = yOf(e.r);
@@ -932,6 +965,8 @@
     var sv = '<svg class="wl-svg" viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H + '">';
     sv += "<defs>";
     ids.forEach(function (id) { sv += '<clipPath id="wlc-' + id + '"><circle r="10"/></clipPath>'; });
+    sv += '<clipPath id="rv-wk"><rect class="pl-reveal" x="0" y="0" width="' + W + '" height="' + H +
+      '" data-w="' + W + '" data-end="' + (xOf(lastIdx) + 16) + '"/></clipPath>';
     sv += "</defs>";
     for (r = 1; r <= N; r++) {
       sv += '<line class="pl-row" x1="0" x2="' + W + '" y1="' + yOf(r) + '" y2="' + yOf(r) + '"/>';
@@ -956,12 +991,12 @@
       for (var k = 1; k < pts.length; k++) {
         var a = pts[k - 1], b = pts[k];
         var xa = xOf(a.i), xb = xOf(b.i), ya = yOf(a.r), yb = yOf(b.r), mx = (xa + xb) / 2;
-        sv += '<path class="pl-line" d="M' + xa + " " + ya + " C" + mx + " " + ya + " " + mx + " " + yb +
+        sv += '<path class="pl-line" clip-path="url(#rv-wk)" d="M' + xa + " " + ya + " C" + mx + " " + ya + " " + mx + " " + yb +
           " " + xb + " " + yb + '"/>';
       }
       pts.forEach(function (p, k) {
         if (k === pts.length - 1) return;
-        sv += '<circle class="pl-dot" cx="' + xOf(p.i) + '" cy="' + yOf(p.r) + '" r="4"/>';
+        sv += '<circle class="pl-dot" clip-path="url(#rv-wk)" cx="' + xOf(p.i) + '" cy="' + yOf(p.r) + '" r="4"/>';
       });
       var e = pts[pts.length - 1];
       var img = has(m.face) ? m.face : m.avatar;
@@ -989,24 +1024,31 @@
   }
 
   function runPower(block) {
-    var lines = [].slice.call(block.querySelectorAll(".pl-line"));
-    var heads = [].slice.call(block.querySelectorAll(".pl-head, .pl-name, .pl-dot"));
-    lines.forEach(function (l) {
-      var len = l.getTotalLength ? l.getTotalLength() : 300;
-      l.style.transition = "none";
-      l.style.strokeDasharray = len;
-      l.style.strokeDashoffset = len;
-    });
+    var rect = block.querySelector(".pl-reveal");
+    var heads = [].slice.call(block.querySelectorAll(".pl-head, .pl-name"));
+    block.querySelectorAll(".pl-dot").forEach(function (n) { n.classList.add("on"); });
+    if (block._raf) cancelAnimationFrame(block._raf);
+    clearTimeout(block._headT);
     heads.forEach(function (n) { n.classList.remove("on"); });
-    void block.offsetWidth;
-    lines.forEach(function (l, i) {
-      l.style.transition = "stroke-dashoffset 1.6s cubic-bezier(.45,0,.2,1) " + (i * 0.08).toFixed(2) + "s";
-      l.style.strokeDashoffset = 0;
-    });
-    [].slice.call(block.querySelectorAll(".pl-dot")).forEach(function (n) { n.classList.add("on"); });
-    setTimeout(function () {
+    if (!rect) { heads.forEach(function (n) { n.classList.add("on"); }); return; }
+
+    var full = +rect.getAttribute("data-w") || 0;
+    var end = Math.min(full, +rect.getAttribute("data-end") || full);
+    /* weekly chart: pace per week; all-time chart: one steady sweep */
+    var steps = block.querySelectorAll(".wl-wk:not(.future)").length || block.querySelectorAll(".pl-year:not(.future)").length || 2;
+    var dur = Math.min(4200, 700 + steps * 650);
+    rect.setAttribute("width", 0);
+    var t0 = null;
+    function ease(k) { return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; }
+    function step(ts) {
+      if (t0 === null) t0 = ts;
+      var k = Math.min(1, (ts - t0) / dur);
+      rect.setAttribute("width", (end * ease(k)).toFixed(1));
+      if (k < 1) { block._raf = requestAnimationFrame(step); return; }
+      rect.setAttribute("width", full);
       heads.forEach(function (n) { n.classList.add("on"); });
-    }, 1300 + lines.length * 80);
+    }
+    block._raf = requestAnimationFrame(step);
   }
 
   function measureCharts() {
@@ -1020,7 +1062,11 @@
 
   function wirePower() {
     /* first pass: size the charts to the card, then render once more */
-    if (current === "table" && measureCharts()) { render("table", true); return; }
+    if (current === "table" && reflowDepth === 0 && measureCharts()) {
+      reflowDepth++;
+      try { render("table", true); } finally { reflowDepth--; }
+      return;
+    }
     [].slice.call(root.querySelectorAll(".pl-block")).forEach(function (block) {
       var sc = block.querySelector(".wl-scroll");
       if (sc) {

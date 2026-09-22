@@ -944,3 +944,28 @@ html.sheet-lock, html.sheet-lock body { overflow: hidden; }
 .cc-note { min-height: 2.6em; line-height: 1.3; }
 .cyear .bb { display: block; font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; white-space: nowrap; }
 .cyear .bb .rn { font-variant: small-caps; letter-spacing: 0.06em; font-weight: 700; }
+
+/* ---------- Former league members ---------- */
+.former-block { margin-top: 2.5rem; }
+.former-years {
+  position: absolute; top: 5%; right: 7%;
+  padding: 0.2rem 0.5rem; border-radius: 999px;
+  background: var(--ink); color: #fff; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em;
+}
+.former-card {
+  display: flex; flex-direction: column; align-items: center;
+  aspect-ratio: 380 / 400; padding: 0 0 4%;
+}
+.fc-frame {
+  width: 88%; flex: 1; margin-top: 3%;
+  border: 3px solid var(--ink); border-radius: 18px; overflow: hidden;
+  background: #ECEDEF; display: grid; place-items: center;
+}
+.fc-frame img { width: 78%; height: auto; display: block; border-radius: 0; }
+.fc-label {
+  margin-top: -1.4rem; position: relative;
+  background: #E4E6E9; border: 3px solid var(--ink); border-radius: 14px;
+  padding: 0.35rem 1rem 0.4rem; text-align: center; min-width: 62%;
+}
+.fc-label b { display: block; font-size: 0.95rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.fc-label small { display: block; font-size: 0.7rem; color: var(--ink-2); }
