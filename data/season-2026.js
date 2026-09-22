@@ -47,21 +47,23 @@ window.SEASONS[2026] = {
   totalWeeks: 17,
   rankHistory: [
     { week: 1, order: ["Twerk", "Luckyballzz7", "Handegg United", "Cee Dees TeeDees", "TUSH PUSH",
-      "Take Me To Dinner First", "Rush Mode Isaac", "Julius's Juicemen", "Gin&Jukes", "HutMessXpress"] }
+      "Take Me To Dinner First", "Rush Mode Isaac", "Julius's Juicemen", "Gin&Jukes", "HutMessXpress"] },
+    { week: 2, order: ["Twerk", "TUSH PUSH", "Handegg United", "HutMessXpress", "Luckyballzz7",
+      "Take Me To Dinner First", "Cee Dees TeeDees", "Gin&Jukes", "Julius's Juicemen", "Rush Mode Isaac"] }
   ],
 
-  // Standings, currently after week 1
+  // Standings, currently after week 2
   standings: [
-    { rank: 1, team: "Twerk", manager: "twerk", w: 1, l: 0, t: 0, pf: 148.36 },
-    { rank: 2, team: "Luckyballzz7", manager: "nathan", w: 1, l: 0, t: 0, pf: 130.26 },
-    { rank: 3, team: "Handegg United", manager: "johannes", w: 1, l: 0, t: 0, pf: 124.20 },
-    { rank: 4, team: "Cee Dees TeeDees", manager: "ceedee", w: 1, l: 0, t: 0, pf: 109.46 },
-    { rank: 5, team: "TUSH PUSH", manager: "tush", w: 1, l: 0, t: 0, pf: 105.60 },
-    { rank: 6, team: "Take Me To Dinner First", manager: "dinner", w: 0, l: 1, t: 0, pf: 124.10 },
-    { rank: 7, team: "Rush Mode Isaac", manager: "isaac", w: 0, l: 1, t: 0, pf: 112.16 },
-    { rank: 8, team: "Julius's Juicemen", manager: "julius", w: 0, l: 1, t: 0, pf: 106.52 },
-    { rank: 9, team: "Gin&Jukes", manager: "gin", w: 0, l: 1, t: 0, pf: 100.86 },
-    { rank: 10, team: "HutMessXpress", manager: "hutmess", w: 0, l: 1, t: 0, pf: 96.60 }
+    { rank: 1, team: "Twerk", manager: "twerk", w: 2, l: 0, t: 0, pf: 263.88 },
+    { rank: 2, team: "TUSH PUSH", manager: "tush", w: 2, l: 0, t: 0, pf: 233.56 },
+    { rank: 3, team: "Handegg United", manager: "johannes", w: 2, l: 0, t: 0, pf: 223.90 },
+    { rank: 4, team: "HutMessXpress", manager: "hutmess", w: 1, l: 1, t: 0, pf: 239.28 },
+    { rank: 5, team: "Luckyballzz7", manager: "nathan", w: 1, l: 1, t: 0, pf: 235.94 },
+    { rank: 6, team: "Take Me To Dinner First", manager: "dinner", w: 1, l: 1, t: 0, pf: 232.18 },
+    { rank: 7, team: "Cee Dees TeeDees", manager: "ceedee", w: 1, l: 1, t: 0, pf: 212.64 },
+    { rank: 8, team: "Gin&Jukes", manager: "gin", w: 0, l: 2, t: 0, pf: 208.16 },
+    { rank: 9, team: "Julius's Juicemen", manager: "julius", w: 0, l: 2, t: 0, pf: 200.48 },
+    { rank: 10, team: "Rush Mode Isaac", manager: "isaac", w: 0, l: 2, t: 0, pf: 192.40 }
   ],
 
   playoffs: {
@@ -100,7 +102,11 @@ window.SEASONS[2026] = {
       week: 2,
       headline: "",
       matchups: [
-        { home: "Handegg United", away: "Julius's Juicemen", homeScore: null, awayScore: null }
+        { home: "Handegg United", away: "Julius's Juicemen", homeScore: 99.70, awayScore: 93.96 },
+        { home: "HutMessXpress", away: "Luckyballzz7", homeScore: 142.68, awayScore: 105.68 },
+        { home: "TUSH PUSH", away: "Gin&Jukes", homeScore: 127.96, awayScore: 107.30 },
+        { home: "Twerk", away: "Rush Mode Isaac", homeScore: 115.52, awayScore: 80.24 },
+        { home: "Take Me To Dinner First", away: "Cee Dees TeeDees", homeScore: 108.08, awayScore: 103.18 }
       ],
       notes: [
         "Julius starts three replacements: Josh Jacobs on the Commissioner's Exempt List, Nico Collins out, Steelers D instead of Ravens",
