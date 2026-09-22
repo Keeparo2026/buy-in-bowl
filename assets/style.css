@@ -969,3 +969,28 @@ html.sheet-lock, html.sheet-lock body { overflow: hidden; }
 }
 .fc-label b { display: block; font-size: 0.95rem; letter-spacing: 0.04em; text-transform: uppercase; }
 .fc-label small { display: block; font-size: 0.7rem; color: var(--ink-2); }
+
+/* ---------- Records ---------- */
+.rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr)); gap: 0.75rem; }
+.rc {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 1rem 1.1rem 0.95rem; display: flex; flex-direction: column; gap: 0.45rem;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.rc:hover { border-color: var(--line-2); transform: translateY(-2px); }
+.rc-t { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+.rc-v { font-family: var(--display); font-size: 2.2rem; line-height: 1; color: var(--ink); }
+.rc-who { display: flex; align-items: center; gap: 0.55rem; cursor: pointer; }
+.rc-who .avatar { width: 1.9rem; height: 1.9rem; }
+.rc-who:hover .mname { text-decoration: underline; text-underline-offset: 3px; }
+.rc-when { font-size: 0.78rem; color: var(--muted); margin-top: auto; padding-top: 0.35rem; border-top: 1px solid var(--line); }
+.rc-medal { color: var(--accent); display: inline-flex; }
+.rc-medal .medal { width: 1.1rem; height: 1.1rem; }
+.cwho[data-profile] { cursor: pointer; }
+.tbd-cell { color: var(--muted); font-size: 0.85rem; }
+
+/* four tabs on phones */
+@media (max-width: 42rem) {
+  .masthead nav { grid-template-columns: repeat(4, 1fr); }
+  .masthead nav button { font-size: 0.78rem; padding: 0.42rem 0.1rem; }
+}

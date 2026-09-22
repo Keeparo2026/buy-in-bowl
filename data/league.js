@@ -81,50 +81,15 @@ window.LEAGUE = {
     { id: "td", country: "US", name: "John", teams: { 2025: "Touchdown Domination" }, avatar: "media/jersey-td.jpg", card: "media/card-td.jpg", portrait: "media/portrait-td.jpg", face: "media/face-td.jpg", color: "#9AA3AD" }
   ],
 
-  /* All-time record book. Source: Yahoo > League > Record Book.
-     Only all-time entries belong here — current-season records change weekly. */
-  recordBook: {
-    note: "All-time, through the end of Season 2025. Yahoo counts playoff games here, so totals run higher than the season standings.",
-    groups: [
-      {
-        title: "Wins",
-        rows: [
-          { record: "Most wins in a season", holder: "Handegg United, 2025", value: "12" },
-          { record: "Longest win streak", holder: "Gin&Jukes 2025, Cee Dees TeeDees 2025", value: "5" }
-        ]
-      },
-      {
-        title: "Losses",
-        rows: [
-          { record: "Most losses in a season", holder: "Gamble Play Jason, 2025", value: "13" },
-          { record: "Longest losing streak", holder: "Gamble Play Jason, 2025", value: "7" }
-        ]
-      },
-      {
-        title: "Margin of victory",
-        rows: [
-          { record: "Largest, single week", holder: "HutMessXpress over Handegg United, Week 6 2025", value: "69.56" },
-          { record: "Largest, season average", holder: "Gamble Play Jason, 2025", value: "31.40" },
-          { record: "Smallest, single week", holder: "Twerk over HutMessXpress, Week 12 2025", value: "1.34" },
-          { record: "Smallest, season average", holder: "Take Me To Dinner First, 2025", value: "17.49" }
-        ]
-      },
-      {
-        title: "Margin of defeat",
-        rows: [
-          { record: "Largest, single week", holder: "Handegg United, Week 6 2025", value: "69.56" },
-          { record: "Largest, season average", holder: "Handegg United, 2025", value: "39.31" },
-          { record: "Smallest, single week", holder: "HutMessXpress, Week 12 2025", value: "1.34" },
-          { record: "Smallest, season average", holder: "HutMessXpress, 2025", value: "12.16" }
-        ]
-      },
-      {
-        title: "Strength of schedule",
-        rows: [
-          { record: "Hardest, weekly average", holder: "Twerk, 2025", value: "117.49" },
-          { record: "Easiest, weekly average", holder: "Cee Dees TeeDees, 2025", value: "100.66" }
-        ]
-      }
-    ]
-  }
+  /* Records from Yahoo's record book that can't be computed from our data.
+     Everything else (high scores, season points, all-time marks) is computed live.
+     If a computed value beats one of these, the computed one wins automatically. */
+  records: [
+    { key: "blowout", value: 69.56, manager: "hutmess", when: "Week 6, 2025", detail: "over Handegg United" },
+    { key: "closest", value: 1.34, manager: "twerk", when: "Week 12, 2025", detail: "over HutMessXpress" },
+    { key: "winstreak", value: 5, manager: ["gin", "ceedee"], when: "2025" },
+    { key: "losestreak", value: 7, manager: "jason", when: "2025" },
+    { key: "hardsched", value: 117.49, manager: "twerk", when: "2025", detail: "opponent points per week" },
+    { key: "easysched", value: 100.66, manager: "ceedee", when: "2025", detail: "opponent points per week" }
+  ]
 };

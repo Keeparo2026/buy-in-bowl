@@ -493,7 +493,7 @@
           '<div class="cc-stats"><div class="cc-stat"><div class="cc-k">Record</div><div class="cc-v">–</div></div>' +
           '<div class="cc-stat"><div class="cc-k">Avg points</div><div class="cc-v">–</div></div></div>' +
           '<div class="cc-note">Crowned in<br>week ' + (((S[yy].playoffs || {}).weeks || {}).Final || 17) + "</div></div>";
-        h += seasonMedal(yy) + "</div>";
+        h += "</div>";
         return;
       }
       var mm = mgr(cc.manager);
@@ -518,7 +518,7 @@
         '<div class="cc-stat"><div class="cc-k">Avg points</div><div class="cc-v">' + avg + "</div></div></div>";
       if (has(cc.note)) h += '<div class="cc-note">' + esc(cc.note) + "</div>";
       h += "</div>";
-      h += seasonMedal(yy) + "</div>";
+      h += "</div>";
     });
     h += "</div>";
 
@@ -574,6 +574,159 @@
       }
     });
     return h + "</div></section></div>";
+  }
+
+  /* ---------- Records ---------- */
+  function isDone(y) { var s = S[y]; return s && s.status !== "live" && s.status !== "laufend"; }
+
+  /* every game with a final score: weekly matchups and playoffs */
+  function allGames() {
+    var out = [];
+    years().forEach(function (y) {
+      var s = S[y];
+      (s.weeks || []).forEach(function (w) {
+        (w.matchups || []).forEach(function (m) {
+          if (m.homeScore == null || m.awayScore == null) return;
+          out.push({ y: y, when: "Week " + w.week + ", " + y, a: m.home, as: +m.homeScore, b: m.away, bs: +m.awayScore });
+        });
+      });
+      var po = s.playoffs || {};
+      (po.games || []).forEach(function (g) {
+        if (g.homeScore == null || g.awayScore == null) return;
+        var wk = (po.weeks || {})[g.round];
+        out.push({ y: y, when: g.round + (wk ? " (Week " + wk + ")" : "") + ", " + y,
+          a: g.home, as: +g.homeScore, b: g.away, bs: +g.awayScore });
+      });
+    });
+    return out;
+  }
+
+  function recCard(title, value, ids, when, detail, fmt) {
+    ids = [].concat(ids || []).filter(function (x) { return x; });
+    var who = ids.map(function (id) {
+      var m = mgr(id);
+      var img = m.face || m.avatar;
+      return '<div class="rc-who" data-profile="' + id + '">' +
+        (has(img) ? '<img class="avatar" src="' + esc(img) + '" alt="">' : "") +
+        '<span class="mtxt"><span class="mname">' + esc(m.name || id) + flagFor(id) + "</span>" +
+        '<span class="mteam">' + esc(teamOf(id, when)) + "</span></span></div>";
+    }).join("");
+    var v = typeof value === "number" ? (fmt === 0 ? String(value) : num(value, fmt === undefined ? 2 : fmt)) : value;
+    return '<div class="rc"><div class="rc-t">' + esc(title) + '</div><div class="rc-v">' + v + "</div>" + who +
+      (when || detail ? '<div class="rc-when">' + [esc(when || ""), esc(detail || "")].filter(function (x) { return x; }).join(" · ") + "</div>" : "") +
+      "</div>";
+  }
+
+  /* team name a manager had in the season mentioned in "when" */
+  function teamOf(id, when) {
+    var m = mgr(id), yrs = Object.keys(m.teams || {}).sort();
+    var hit = String(when || "").match(/(20\d\d)/);
+    if (hit && m.teams && m.teams[hit[1]]) return m.teams[hit[1]];
+    return yrs.length ? m.teams[yrs[yrs.length - 1]] : "";
+  }
+
+  function book(key) { return (L.records || []).filter(function (r) { return r.key === key; })[0]; }
+
+  function renderRecords() {
+    var h = '<div class="wrap page">';
+    h += '<div class="page-head"><h1 class="page-title">Records</h1>' +
+      '<p class="page-kicker">The best, the worst and the closest. Tap a name for the profile.</p></div>';
+
+    /* --- single game --- */
+    var games = allGames(), hi = null, lo = null, big = null, close = null;
+    games.forEach(function (g) {
+      [[g.a, g.as], [g.b, g.bs]].forEach(function (p) {
+        if (!hi || p[1] > hi.v) hi = { v: p[1], team: p[0], y: g.y, when: g.when };
+        if (!lo || p[1] < lo.v) lo = { v: p[1], team: p[0], y: g.y, when: g.when };
+      });
+      var diff = Math.abs(g.as - g.bs), win = g.as > g.bs ? g.a : g.b, lose = g.as > g.bs ? g.b : g.a;
+      if (!big || diff > big.v) big = { v: diff, team: win, opp: lose, y: g.y, when: g.when };
+      if (!close || diff < close.v) close = { v: diff, team: win, opp: lose, y: g.y, when: g.when };
+    });
+    function fromGame(r) { return r ? teamManager(r.y, r.team) : null; }
+    var bB = book("blowout"), bC = book("closest");
+    var blow = bB && (!big || bB.value >= big.v) ? { v: bB.value, id: bB.manager, when: bB.when, d: bB.detail }
+      : big ? { v: big.v, id: fromGame(big), when: big.when, d: "over " + big.opp } : null;
+    var clos = bC && (!close || bC.value <= close.v) ? { v: bC.value, id: bC.manager, when: bC.when, d: bC.detail }
+      : close ? { v: close.v, id: fromGame(close), when: close.when, d: "over " + close.opp } : null;
+
+    h += '<section class="block"><h2 class="sec">Single game</h2><div class="rc-grid">';
+    if (hi) h += recCard("Highest score", hi.v, fromGame(hi), hi.when, "");
+    if (lo) h += recCard("Lowest score", lo.v, fromGame(lo), lo.when, "");
+    if (blow) h += recCard("Biggest blowout", blow.v, blow.id, blow.when, blow.d);
+    if (clos) h += recCard("Closest game", clos.v, clos.id, clos.when, clos.d);
+    h += "</div>";
+    h += '<p class="hint">Weekly scores are on file from 2026 on. Blowout and closest game include Yahoo\'s record book for 2025.</p></section>';
+
+    /* --- season (completed seasons only) --- */
+    var done = years().filter(isDone);
+    var mostPf = null, leastPf = null, mostW = null, mostL = null;
+    done.forEach(function (y) {
+      (S[y].standings || []).forEach(function (r) {
+        var pf = +r.pf || 0;
+        if (!mostPf || pf > mostPf.v) mostPf = { v: pf, id: r.manager, y: y };
+        if (!leastPf || pf < leastPf.v) leastPf = { v: pf, id: r.manager, y: y };
+      });
+      careers(String(y)).forEach(function (r) {
+        if (!mostW || r.wins > mostW.v) mostW = { v: r.wins, id: r.id, y: y, rec: r.wins + "-" + r.losses };
+        if (!mostL || r.losses > mostL.v) mostL = { v: r.losses, id: r.id, y: y, rec: r.wins + "-" + r.losses };
+      });
+    });
+    h += '<section class="block"><h2 class="sec">Season</h2><div class="rc-grid">';
+    if (mostW) h += recCard("Most wins", mostW.v, mostW.id, String(mostW.y), mostW.rec + " incl. playoffs", 0);
+    if (mostL) h += recCard("Most losses", mostL.v, mostL.id, String(mostL.y), mostL.rec + " incl. playoffs", 0);
+    ["winstreak", "losestreak"].forEach(function (k) {
+      var b = book(k);
+      if (b) h += recCard(k === "winstreak" ? "Longest win streak" : "Longest losing streak", b.value, b.manager, b.when, b.detail, 0);
+    });
+    if (mostPf) h += recCard("Most points, regular season", mostPf.v, mostPf.id, String(mostPf.y), "");
+    if (leastPf) h += recCard("Fewest points, regular season", leastPf.v, leastPf.id, String(leastPf.y), "");
+    ["hardsched", "easysched"].forEach(function (k) {
+      var b = book(k);
+      if (b) h += recCard(k === "hardsched" ? "Hardest schedule" : "Easiest schedule", b.value, b.manager, b.when, b.detail);
+    });
+    h += "</div></section>";
+
+    /* --- most points per season (the medal) --- */
+    h += '<section class="block"><h2 class="sec">Most points per season</h2>';
+    h += '<div class="table-scroll"><table class="champs-table"><thead><tr><th>Year</th><th>Winner</th>' +
+      '<th class="num">Points</th></tr></thead><tbody>';
+    years().slice().sort(function (a, b) { return b - a; }).forEach(function (y) {
+      var pl = S[y].pointsLeader, ed = edition(y);
+      var yc = '<td class="cyear"><b>' + y + "</b>" + (ed ? '<span class="bb">Buy-In Bowl <span class="rn">' + ed + "</span></span>" : "") + "</td>";
+      if (pl && has(pl.team)) {
+        var id = pl.manager || teamManager(y, pl.team), mm = mgr(id);
+        h += "<tr>" + yc + '<td><div class="cwho" data-profile="' + id + '"><span class="rc-medal">' + medalSvg() + "</span>" +
+          (has(mm.face || mm.avatar) ? '<img class="avatar" src="' + esc(mm.face || mm.avatar) + '" alt="">' : "") +
+          '<span class="mtxt"><span class="mname">' + esc(mm.name || id) + flagFor(id) + '</span><span class="mteam">' +
+          esc(pl.team) + '</span></span></div></td><td class="num">' + (pl.points ? num(pl.points, 2) : "–") + "</td></tr>";
+      } else {
+        h += "<tr>" + yc + '<td class="tbd-cell">To be decided after the regular season</td><td class="num">–</td></tr>';
+      }
+    });
+    h += "</tbody></table></div></section>";
+
+    /* --- all-time --- */
+    var car = careers("all");
+    function top(key, low) {
+      var best = null;
+      car.forEach(function (r) {
+        if (key === "pct" && r.games < 10) return;
+        var v = r[key] || 0;
+        if (!best || (low ? v < best.v : v > best.v)) best = { v: v, id: r.id, r: r };
+      });
+      return best;
+    }
+    var tT = top("titles"), tW = top("wins"), tP = top("pf"), tPct = top("pct");
+    h += '<section class="block"><h2 class="sec">All-time</h2><div class="rc-grid">';
+    if (tT && tT.v) h += recCard("Most titles", tT.v, tT.id, "", "", 0);
+    if (tW) h += recCard("Most wins", tW.v, tW.id, "", tW.r.wins + "-" + tW.r.losses + " incl. playoffs", 0);
+    if (tPct) h += recCard("Best win rate", (tPct.v * 100).toFixed(1) + "%", tPct.id, "", tPct.r.games + " games");
+    if (tP) h += recCard("Most points", tP.v, tP.id, "", tP.r.seasons + (tP.r.seasons === 1 ? " season" : " seasons"));
+    h += "</div>";
+    h += '<p class="hint">All-time includes the current season.</p></section>';
+
+    return h + "</div>";
   }
 
   /* ---------- All-time table ---------- */
@@ -1471,9 +1624,10 @@
   var current = "home";
 
   function render(route, keepScroll) {
-    current = route === "table" ? "table" : route === "champions" ? "champions" : "home";
+    current = ["table", "champions", "records"].indexOf(route) !== -1 ? route : "home";
     root.innerHTML = current === "table" ? renderTable() :
-                     current === "champions" ? renderChampions() : renderLanding();
+                     current === "champions" ? renderChampions() :
+                     current === "records" ? renderRecords() : renderLanding();
     document.querySelectorAll("#nav [data-route]").forEach(function (b) {
       if (b.getAttribute("data-route") === current) b.setAttribute("aria-current", "page");
       else b.removeAttribute("aria-current");
@@ -1485,13 +1639,14 @@
   function navigate(route) {
     render(route);
     try {
-      history.replaceState(null, "", route === "table" ? "#/table" : route === "champions" ? "#/champions" : "#/");
+      history.replaceState(null, "", route === "home" ? "#/" : "#/" + route);
     } catch (e) { /* sandboxed */ }
   }
 
   function routeFromHash() {
     var hh = location.hash || "";
-    return /#\/table/.test(hh) ? "table" : /#\/champions/.test(hh) ? "champions" : "home";
+    return /#\/table/.test(hh) ? "table" : /#\/champions/.test(hh) ? "champions" :
+           /#\/records/.test(hh) ? "records" : "home";
   }
 
   document.addEventListener("click", function (e) {
@@ -1536,6 +1691,7 @@
     document.getElementById("nav").innerHTML =
       '<button type="button" data-route="home">Home</button>' +
       '<button type="button" data-route="champions">Champions</button>' +
+      '<button type="button" data-route="records">Records</button>' +
       '<button type="button" data-route="table">All-time</button>';
     var mark = document.getElementById("mark");
     mark.innerHTML = "The Buy-In <span>Bowl</span>";

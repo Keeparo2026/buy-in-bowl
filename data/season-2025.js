@@ -16,7 +16,7 @@ window.SEASONS[2025] = {
   title: "The Buy-In Bowl I",
   status: "complete",
   buyIn: 250,  // per manager, in $
-  logo: "media/season-2025.png",
+  logo: "media/season-2025.jpg",
 
   champion: {
     team: "Handegg United",
