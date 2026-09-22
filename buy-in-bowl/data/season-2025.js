@@ -26,11 +26,7 @@ window.SEASONS[2025] = {
     image: "media/champ-2025.jpg"   // picture for the champion card
   },
   runnerUp: { team: "HutMessXpress", manager: "hutmess" },
-  lastPlace: {
-    team: "TUSH PUSH", manager: "tush",
-    punishment: "Walked free. Season one had no punishment",
-    image: "media/shame-tush-2025.jpg"   // picture for the Wall of Shame card
-  },
+  lastPlace: { team: "TUSH PUSH", manager: "tush", punishment: "" },
   pointsLeader: { team: "Twerk", manager: "twerk", points: 1668.82 },  // Most points, regular season
 
   recap: "Won from the 2 seed, 120.03 to 107.76 over HutMessXpress in the final.",
@@ -103,35 +99,7 @@ window.SEASONS[2025] = {
   ],
   trades: [],
   awards: [],
-  /* Straight from the group chat: only the funny stuff and the blunders.
-     type "blunder": title (what went wrong) + optional quote { text, by }
-     type "quote":   text, by, optional reply { text, by } */
-  quotes: [
-    { type: "blunder", date: "2025-09-16", by: "johannes", title: "Dropped Brock Bowers by accident and asked to get him back",
-      quote: { text: "No free passes, this is a cutthroat league.", by: "tush" } },
-    { type: "quote", date: "2025-09-16", by: "nathan", text: "A participation trophy is still a trophy.",
-      reply: { text: "Only 1st place gets a trophy.", by: "gin" } },
-    { type: "blunder", date: "2025-09-22", by: "ceedee", title: "Lost CeeDee Lamb after three weeks of draft prep",
-      quote: { text: "Guys can we re-draft? My employer paid me for no reason.", by: "ceedee" } },
-    { type: "blunder", date: "2025-10-05", by: "johannes", title: "Left the Texans on the bench while they went off",
-      quote: { text: "On my bench 😂😂😂", by: "johannes" } },
-    { type: "blunder", date: "2025-10-20", by: "dinner", title: "Dropped Bo Nix",
-      quote: { text: "In hindsight dropping Bo Nix may have been a mistake…", by: "dinner" } },
-    { type: "quote", date: "2025-10-27", by: "gin", text: "The point of the game is to get the least amount of points, right? If so, I'm crushing it.",
-      reply: { text: "When it says 1% chance of winning, it's rounding up.", by: "nathan" } },
-    { type: "quote", date: "2025-11-03", by: "ceedee", text: "Someone needs a QB? Pros: top 5 QB last season. Cons: currently only one functional arm. Slight pro: not his throwing arm.",
-      reply: { text: "Worst trade of the season potential.", by: "johannes" } },
-    { type: "blunder", date: "2025-11-09", by: "hutmess", title: "Star player sat on the bench in the big week",
-      quote: { text: "That's what I get for picking up new players! Rookie mistake. Can I get a mulligan?", by: "hutmess" } },
-    { type: "quote", date: "2025-12-09", by: "tush", text: "Get a job Malte. Next year we put a time limit on the waiver wire.",
-      reply: { text: "Had way too much time in the office. If they knew, they'd request a share.", by: "ceedee" } },
-    { type: "blunder", date: "2025-12-22", by: "dinner", title: "Scored more than anyone in the playoffs, after being knocked out",
-      quote: { text: "I should have just benched my team.", by: "dinner" } },
-    { type: "blunder", date: "2025-12-29", by: "tush", title: "Suggested a marathon as the last place punishment, then finished last",
-      quote: { text: "A marathon, whose stupid idea was that? 🤔", by: "tush" } },
-    { type: "blunder", date: "2025-12-30", by: "ceedee", title: "91 moves on the wire, no podium",
-      quote: { text: "All that for nothing 😂", by: "ceedee" } }
-  ],
+  quotes: [],
   gallery: [],
   rosters: []
 };

@@ -87,7 +87,6 @@ window.LEAGUE = {
   records: [
     { key: "blowout", value: 69.56, manager: "hutmess", when: "Week 6, 2025", detail: "over Handegg United" },
     { key: "closest", value: 1.34, manager: "twerk", when: "Week 12, 2025", detail: "over HutMessXpress" },
-    { key: "moves", value: 91, manager: "ceedee", when: "2025", detail: "adds and drops" },
     { key: "winstreak", value: 5, manager: ["gin", "ceedee"], when: "2025" },
     { key: "losestreak", value: 7, manager: "jason", when: "2025" },
     { key: "hardsched", value: 117.49, manager: "twerk", when: "2025", detail: "opponent points per week" },

@@ -215,19 +215,10 @@
       h += '<div class="wrap"><img class="hero-img" src="' + esc(lp.image) + '" alt=""></div>';
     }
 
-    h += topThree();
     h += lineup();
-    h += chatWall();
+    h += formerMembers();
     h += '<div class="wordwall" aria-hidden="true"><span>BUY-IN BOWL</span></div>';
     return h;
-  }
-
-  /* Short date like "Sep 20" from "YYYY-MM-DD" */
-  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-  function txDay(when) {
-    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(when || "");
-    return m ? MON[+m[2] - 1] + " " + (+m[3]) : "";
   }
 
   /* Stadium ribbon board: every team name the league has ever had */
@@ -556,263 +547,33 @@
     return h + "</div>";
   }
 
-  /* Home: the top three of the current season, straight from the standings */
-  function topThree() {
-    var y = years()[0], s = S[y];
-    if (!s) return "";
-    var rows = (s.standings || []).slice().sort(function (a, b) { return a.rank - b.rank; }).slice(0, 3);
-    if (!rows.length) return "";
-    var wk = weeksPlayed(y), live = !isDone(y);
-    var h = '<div class="wrap"><section class="block top3">';
-    h += '<h2 class="sec">' + (live ? "Top three right now" : "Final top three") + "</h2>";
-    h += '<div class="table-scroll"><table class="champs-table top3-table"><thead><tr>' +
-      "<th>#</th><th>Manager</th><th>W-L</th><th>Points</th></tr></thead><tbody>";
-    rows.forEach(function (r) {
-      var m = mgr(r.manager), cls = ["gold", "silver", "bronze"][r.rank - 1] || "";
-      h += '<tr data-profile="' + esc(r.manager) + '" tabindex="0">' +
-        '<td class="t3-rank"><span class="dot ' + cls + '"></span>' + r.rank + "</td>" +
-        '<td><div class="cwho">' +
-          (has(m.face || m.avatar) ? '<img class="avatar" src="' + esc(m.face || m.avatar) + '" alt="">' : "") +
-          '<span class="mtxt"><span class="mname">' + esc(m.name || r.team) + flagFor(r.manager) + "</span>" +
-          '<span class="mteam">' + esc(r.team) + "</span></span></div></td>" +
-        '<td class="t3-num">' + r.w + "-" + r.l + (r.t ? "-" + r.t : "") + "</td>" +
-        '<td class="t3-num">' + num(r.pf, 2) + "</td></tr>";
-    });
-    h += "</tbody></table></div>";
-    h += '<div class="t3-foot"><span>' + (wk ? "After week " + wk + " &middot; " : "") + "Buy-In Bowl " + (edition(y) || y) + "</span>" +
-      '<button type="button" class="tm-more t3-link" data-route="table" data-tab="' + y + '">Full standings</button></div>';
-    h += "</section></div>";
-    return h;
-  }
-
-  /* ---------- Former members ---------- */
-  function renderFormer() {
+  /* Managers who played before but are not in the current season */
+  function formerMembers() {
     var cur = years()[0];
     var list = (L.managers || []).filter(function (m) {
       return m.teams && !m.teams[cur] && Object.keys(m.teams).length;
     });
-    var h = '<div class="wrap page">';
-    h += '<div class="page-head"><h1 class="page-title">Former members</h1>' +
-      '<p class="page-kicker">They played, they paid in, they left their mark.</p></div>';
-    if (!list.length) return h + nothing("Nobody has left the league yet.") + "</div>";
-    h += '<div class="fm-grid">';
+    if (!list.length) return "";
+    var h = '<div class="wrap"><section class="crew-block former-block">';
+    h += '<h2 class="sec">Former league members</h2><div class="crew">';
     list.forEach(function (m) {
       var ys = Object.keys(m.teams).sort();
-      var car = careers("all").filter(function (r) { return r.id === m.id; })[0] || {};
-      h += '<article class="fm-card" data-profile="' + esc(m.id) + '" tabindex="0">';
-      h += '<div class="fm-img">' + (has(m.card) ? '<img src="' + esc(m.card) + '" alt="" loading="lazy">' : "") + "</div>";
-      h += '<div class="fm-body"><div class="fm-name">' + esc(m.name || "") + flagFor(m.id) + "</div>";
-      h += '<div class="fm-teams">' + ys.map(function (y) {
-        var st = (S[y].standings || []).filter(function (r) { return r.manager === m.id; })[0];
-        var fin = finishOf(y, m.id);
-        return '<div class="fm-season"><b>' + y + "</b><span>" + esc(m.teams[y]) + "</span>" +
-          (fin ? '<em>' + fin + "</em>" : "") + "</div>";
-      }).join("") + "</div>";
-      h += '<div class="fm-stats">' +
-        '<div><small>Record</small><b>' + (car.games ? car.wins + "-" + car.losses + (car.t ? "-" + car.t : "") : "–") + "</b></div>" +
-        '<div><small>Points</small><b>' + (car.pf ? Math.round(car.pf).toLocaleString("en-US") : "–") + "</b></div>" +
-        "</div>";
-      if (has(m.farewell)) h += '<p class="fm-note">' + esc(m.farewell) + "</p>";
-      h += "</div></article>";
-    });
-    return h + "</div></div>";
-  }
-
-  /* Final place of a manager in a finished season, e.g. "5th of 10" */
-  function finishOf(y, id) {
-    if (!isDone(y)) return "";
-    var s = S[y], n = (s.standings || []).length;
-    var pod = podiumOf(y);
-    var i = pod.indexOf(id);
-    if (i !== -1) return ["Champion", "2nd", "3rd"][i] + " of " + n;
-    if (s.lastPlace && s.lastPlace.manager === id) return "Last of " + n;
-    var car = careers(String(y)).filter(function (r) { return r.id === id; })[0];
-    return car && car.place && car.place < 999 ? ordinal(car.place) + " of " + n : "";
-  }
-  function ordinal(n) {
-    var s = ["th", "st", "nd", "rd"], v = n % 100;
-    return n + (s[(v - 20) % 10] || s[v] || s[0]);
-  }
-
-  /* ---------- Home: straight from the group chat ---------- */
-  var chatOpen = false;
-
-  function chatWho(id, cls) {
-    var m = mgr(id);
-    return '<span class="gc-who ' + (cls || "") + '" data-profile="' + esc(id) + '">' +
-      (has(m.face) ? '<img src="' + esc(m.face) + '" alt="">' : "") + "<b>" + esc(m.name || id) + "</b></span>";
-  }
-
-  function chatWall() {
-    var all = [];
-    years().forEach(function (y) {
-      ((S[y] || {}).quotes || []).forEach(function (q) { if (q && (q.text || q.title)) all.push(q); });
-    });
-    if (!all.length) return "";
-    all.sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")); });
-
-    /* Blunders first, then chat lines; each group newest first */
-    var groups = [
-      { title: "Blunders", items: all.filter(function (q) { return q.type === "blunder"; }) },
-      { title: "Chat", items: all.filter(function (q) { return q.type !== "blunder"; }) }
-    ].filter(function (g) { return g.items.length; });
-
-    var h = '<div class="wrap"><section class="block gc">';
-    h += '<h2 class="sec">Straight from the group chat</h2>';
-    groups.forEach(function (g) {
-      var shown = chatOpen ? g.items : g.items.slice(0, 3);
-      h += '<h3 class="gc-sub">' + g.title + " <span>" + g.items.length + "</span></h3>";
-      h += '<div class="gc-grid">';
-      shown.forEach(function (q) {
-        var d = txDay(q.date), yr = String(q.date || "").slice(0, 4);
-        if (q.type === "blunder") {
-          h += '<article class="gc-card blunder"><div class="gc-top"><span class="gc-tag">Blunder</span>' +
-            '<span class="gc-date">' + esc(d) + (yr ? ", " + yr : "") + "</span></div>" +
-            '<div class="gc-title">' + esc(q.title) + "</div>" +
-            (q.quote && q.quote.by === q.by ? "" : chatWho(q.by, "gc-by"));
-          if (q.quote && q.quote.text) h += '<div class="gc-line"><p>' + esc(q.quote.text) + "</p>" + chatWho(q.quote.by, "small") + "</div>";
-        } else {
-          h += '<article class="gc-card"><div class="gc-top"><span class="gc-tag quote">Chat</span>' +
-            '<span class="gc-date">' + esc(d) + (yr ? ", " + yr : "") + "</span></div>" +
-            '<blockquote class="gc-quote">' + esc(q.text) + "</blockquote>" + chatWho(q.by, "gc-by");
-          if (q.reply && q.reply.text) h += '<div class="gc-line"><p>' + esc(q.reply.text) + "</p>" + chatWho(q.reply.by, "small") + "</div>";
-        }
-        h += "</article>";
-      });
-      h += "</div>";
-    });
-    if (groups.some(function (g) { return g.items.length > 3; })) {
-      h += '<button type="button" class="tm-more" data-chat-toggle>' +
-        (chatOpen ? "Show fewer" : "Show all " + all.length) + "</button>";
-    }
-    return h + "</section></div>";
-  }
-
-  /* ---------- Wall of Shame ---------- */
-  function weeksPlayed(y) {
-    var first = ((S[y] || {}).standings || [])[0];
-    return first ? (+first.w || 0) + (+first.l || 0) + (+first.t || 0) : 0;
-  }
-
-  /* Fewest points in the regular season — the counterpart to most points */
-  function fewestPoints(y) {
-    var low = null;
-    ((S[y] || {}).standings || []).forEach(function (r) {
-      if (r.pf === undefined || r.pf === null || r.pf === "") return;
-      if (!low || +r.pf < +low.pf) low = r;
-    });
-    return low;
-  }
-
-  /* The possible punishments, shown inside the portrait frame of the running season */
-  function punishMenu(y) {
-    var opts = [];
-    ((S[y] || {}).stakes || []).forEach(function (st) {
-      (st.body || []).forEach(function (b) {
-        var m = /^(\d+)\s*[—–-]\s*([^:]+):/.exec(b);
-        if (m) opts.push({ n: m[1], title: m[2] });
-      });
-    });
-    if (!opts.length) return '<div class="cc-portrait cc-q"><span>?</span></div>';
-    return '<div class="cc-portrait sc-menu"><div class="sc-menu-k">Possible punishments</div>' +
-      opts.map(function (o) {
-        return '<div class="sc-menu-o"><span>' + esc(o.n) + "</span>" + esc(o.title) + "</div>";
-      }).join("") + "</div>";
-  }
-
-  function renderShame() {
-    var h = '<div class="wrap page shame-page">';
-    h += '<div class="page-head"><h1 class="page-title">Wall of Shame</h1>' +
-      '<p class="page-kicker">Every last place, and what it cost them.</p></div>';
-
-    if (!years().length) return h + nothing("No seasons on file yet.") + "</div>";
-
-    var done = years().filter(function (y) { var lp = S[y].lastPlace; return lp && has(lp.team); });
-
-    h += '<div class="cc-row">';
-    years().slice().sort(function (a, b) { return a - b; }).forEach(function (yy) {
-      var s = S[yy], lp = s.lastPlace, n = (s.standings || []).length || 10;
-      var ed = edition(yy);
-      h += '<div class="cc-col">';
-
-      if (!(lp && has(lp.team) && lp.manager)) {
-        /* Running season: nobody sentenced yet, but somebody is holding the spot */
-        var bottom = (s.standings || []).slice().sort(function (a, b) { return b.rank - a.rank; })[0];
-        var wk = weeksPlayed(yy);
-        h += '<div class="shamecard tbd"><div class="cc-year">' + yy + "</div>" +
-          '<div class="sc-ribbon"><span>Last place</span></div>' +
-          '<div class="cc-inner">' + punishMenu(yy) +
-          '<div class="cc-first">To be decided</div><div class="cc-team">TBD</div></div>';
-        if (bottom && wk) {
-          var bm = mgr(bottom.manager);
-          h += '<div class="sc-hook" data-profile="' + esc(bottom.manager) + '" tabindex="0">' +
-            (has(bm.face) ? '<img src="' + esc(bm.face) + '" alt="">' : "") +
-            '<span><small>On the hook after week ' + wk + "</small>" +
-            "<b>" + esc(bm.name || bottom.team) + flagFor(bottom.manager) + "</b>" +
-            esc(bottom.team) + " &middot; " + bottom.w + "-" + bottom.l + (bottom.t ? "-" + bottom.t : "") + "</span></div>";
-        } else {
-          h += '<div class="cc-note">Sentenced in<br>week ' + (((s.playoffs || {}).weeks || {}).Final || 17) + "</div>";
-        }
-        h += "</div></div>";
-        return;
+      var lastTeam = m.teams[ys[ys.length - 1]];
+      var label = esc(m.name || "") + ", " + esc(lastTeam);
+      if (has(m.card)) {
+        h += '<button type="button" class="crew-card" data-profile="' + m.id + '" aria-label="' + label + '">' +
+          '<img src="' + esc(m.card) + '" alt="" loading="lazy">' +
+          (m.country ? '<span class="crew-flag">' + flagSvg(m.country) + "</span>" : "") +
+          '<span class="former-years">' + ys.join(", ") + "</span></button>";
+      } else {
+        h += '<button type="button" class="crew-card former-card" data-profile="' + m.id + '" aria-label="' + label + '">' +
+          '<span class="fc-frame">' + (has(m.avatar) ? '<img src="' + esc(m.avatar) + '" alt="">' : "") + "</span>" +
+          (m.country ? '<span class="crew-flag">' + flagSvg(m.country) + "</span>" : "") +
+          '<span class="fc-label"><b>' + esc(m.name || "") + "</b><small>" + esc(lastTeam) + "</small></span>" +
+          '<span class="former-years">' + ys.join(", ") + "</span></button>";
       }
-
-      var mm = mgr(lp.manager);
-      var rec = seasonRecord(yy, lp.manager);
-      var img = has(lp.image) ? lp.image : has(mm.portrait) ? mm.portrait : (mm.card || mm.avatar);
-      h += '<div class="shamecard">';
-      h += '<div class="cc-year">' + yy + "</div>";
-      h += '<div class="sc-ribbon"><span>Last place</span></div>';
-      h += '<div class="cc-inner" data-profile="' + lp.manager + '">';
-      if (has(img)) {
-        h += '<div class="cc-portrait"><img src="' + esc(img) + '" alt=""></div>';
-      }
-      h += '<div class="cc-first">' + esc(mm.name || "") + flagFor(lp.manager) + "</div>";
-      h += '<div class="cc-team">' + esc(lp.team) + "</div></div>";
-      h += '<div class="sc-sentence"><div class="cc-k">The sentence</div>' +
-        (has(lp.punishment) ? '<div class="sc-p">' + esc(lp.punishment) + "</div>"
-          : '<div class="sc-p none">Not on file</div>') +
-        (has(lp.proof) ? '<div class="sc-proof"><img src="' + esc(lp.proof) + '" alt="Proof"></div>' : "") + "</div>";
-      h += '<div class="cc-stats">' +
-        '<div class="cc-stat"><div class="cc-k">Record</div><div class="cc-v">' +
-          (rec ? rec.wins + "-" + rec.losses + (rec.t ? "-" + rec.t : "") : "–") + "</div></div>" +
-        '<div class="cc-stat"><div class="cc-k">Avg points</div><div class="cc-v">' +
-          (function () {
-            var r = (s.standings || []).filter(function (x) { return x.manager === lp.manager; })[0];
-            var g = r ? (+r.w || 0) + (+r.l || 0) + (+r.t || 0) : 0;
-            return g && r.pf ? (+r.pf / g).toFixed(1) : "–";
-          })() + "</div></div></div>";
-      if (has(lp.note)) h += '<div class="cc-note">' + esc(lp.note) + "</div>";
-      h += "</div></div>";
     });
-    h += "</div>";
-
-    if (!done.length) return h + "</div>";
-
-    /* One row per finished season */
-    h += '<section class="block"><h2 class="sec">Season bottoms</h2>';
-    h += '<div class="table-scroll"><table class="champs-table shame-table"><thead><tr>' +
-      "<th>Year</th><th>Last place</th><th>Fewest points</th><th>Sentence</th></tr></thead><tbody>";
-    done.slice().sort(function (a, b) { return b - a; }).forEach(function (yy) {
-      var lp = S[yy].lastPlace, low = fewestPoints(yy);
-      function cell(id, sub) {
-        if (!id) return "<td>–</td>";
-        var mm = mgr(id);
-        return '<td><div class="cwho">' +
-          (has(mm.face || mm.avatar) ? '<img class="avatar" src="' + esc(mm.face || mm.avatar) + '" alt="">' : "") +
-          '<span class="mtxt"><span class="mname">' + esc(mm.name || id) + flagFor(id) + "</span>" +
-          '<span class="mteam">' + sub + "</span></span></div></td>";
-      }
-      var ed = edition(yy);
-      var lowId = low ? (low.manager || teamManager(yy, low.team)) : null;
-      h += '<tr><td class="cyear"><b>' + yy + "</b>" + (ed ? '<span class="bb">Buy-In Bowl <span class="rn">' + ed + "</span></span>" : "") + "</td>" +
-        cell(lp.manager, esc(lp.team)) +
-        cell(lowId, low ? num(low.pf, 2) + " pts" : "") +
-        "<td>" + (has(lp.punishment) ? esc(lp.punishment) : '<span class="muted">Not on file</span>') + "</td></tr>";
-    });
-    h += "</tbody></table></div></section>";
-
-    return h + "</div>";
+    return h + "</div></section></div>";
   }
 
   /* ---------- Records ---------- */
@@ -920,8 +681,6 @@
     });
     if (mostPf) h += recCard("Most points, regular season", mostPf.v, mostPf.id, String(mostPf.y), "");
     if (leastPf) h += recCard("Fewest points, regular season", leastPf.v, leastPf.id, String(leastPf.y), "");
-    var mv = book("moves");
-    if (mv) h += recCard("Most moves, season", mv.value, mv.manager, mv.when, mv.detail, 0);
     ["hardsched", "easysched"].forEach(function (k) {
       var b = book(k);
       if (b) h += recCard(k === "hardsched" ? "Hardest schedule" : "Easiest schedule", b.value, b.manager, b.when, b.detail);
@@ -1865,11 +1624,9 @@
   var current = "home";
 
   function render(route, keepScroll) {
-    current = ["table", "champions", "shame", "records", "former"].indexOf(route) !== -1 ? route : "home";
+    current = ["table", "champions", "records"].indexOf(route) !== -1 ? route : "home";
     root.innerHTML = current === "table" ? renderTable() :
                      current === "champions" ? renderChampions() :
-                     current === "shame" ? renderShame() :
-                     current === "former" ? renderFormer() :
                      current === "records" ? renderRecords() : renderLanding();
     document.querySelectorAll("#nav [data-route]").forEach(function (b) {
       if (b.getAttribute("data-route") === current) b.setAttribute("aria-current", "page");
@@ -1889,8 +1646,7 @@
   function routeFromHash() {
     var hh = location.hash || "";
     return /#\/table/.test(hh) ? "table" : /#\/champions/.test(hh) ? "champions" :
-           /#\/records/.test(hh) ? "records" : /#\/shame/.test(hh) ? "shame" :
-           /#\/former/.test(hh) ? "former" : "home";
+           /#\/records/.test(hh) ? "records" : "home";
   }
 
   document.addEventListener("click", function (e) {
@@ -1901,15 +1657,7 @@
     if (pf) { e.preventDefault(); openProfile(pf.getAttribute("data-profile")); return; }
 
     var r = el.closest("[data-route]");
-    if (r) {
-      e.preventDefault();
-      if (r.getAttribute("data-tab")) { mTab = r.getAttribute("data-tab"); mSort = defaultSort(mTab); }
-      navigate(r.getAttribute("data-route"));
-      return;
-    }
-
-    var gc = el.closest("[data-chat-toggle]");
-    if (gc) { e.preventDefault(); chatOpen = !chatOpen; render(current, true); return; }
+    if (r) { e.preventDefault(); navigate(r.getAttribute("data-route")); return; }
 
     var tab = el.closest("[data-mtab]");
     if (tab) {
@@ -1943,10 +1691,8 @@
     document.getElementById("nav").innerHTML =
       '<button type="button" data-route="home">Home</button>' +
       '<button type="button" data-route="champions">Champions</button>' +
-      '<button type="button" data-route="shame">Shame</button>' +
       '<button type="button" data-route="records">Records</button>' +
-      '<button type="button" data-route="table">All-time</button>' +
-      '<button type="button" data-route="former">Former</button>';
+      '<button type="button" data-route="table">All-time</button>';
     var mark = document.getElementById("mark");
     mark.innerHTML = "The Buy-In <span>Bowl</span>";
     mark.setAttribute("data-route", "home");

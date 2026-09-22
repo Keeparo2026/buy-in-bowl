@@ -124,22 +124,9 @@ window.SEASONS[2026] = {
     // { title: "Manager of the year", winner: "", detail: "" }
   ],
 
-  /* Straight from the group chat: only the funny stuff and the blunders.
-     type "blunder": title + optional quote { text, by }; type "quote": text, by, optional reply */
+  // League chat lines. This is the stuff that matters in ten years.
   quotes: [
-    { type: "quote", date: "2026-07-26", by: "johannes", text: "100% of Buy-In Bowl titles currently live at my place. Prep accordingly." },
-    { type: "blunder", date: "2026-08-11", by: "nathan", title: "Didn't read the pinned keeper rules",
-      quote: { text: "Oh I ain't reading that novel.", by: "nathan" } },
-    { type: "quote", date: "2026-08-13", by: "gin", text: "We don't reward losers 🙃 It's called Managed Democracy." },
-    { type: "quote", date: "2026-08-14", by: "nathan", text: "I think we punish the winner. That's the most hated person in the league after all." },
-    { type: "quote", date: "2026-08-14", by: "isaac", text: "Punishment idea: fly to Germany, order a beer and criticize their pour." },
-    { type: "quote", date: "2026-08-22", by: "julius", text: "I have no idea what I'm doing but let's go 🍻" },
-    { type: "blunder", date: "2026-09-16", by: "hutmess", title: "Drafted Fernando Mendoza, got roasted, dropped him three weeks later",
-      quote: { text: "I'm drilled for drafting Mendoza 😅", by: "hutmess" } },
-    { type: "quote", date: "2026-09-15", by: "gin", text: "I vote to recalculate week 1 without TEs." },
-    { type: "quote", date: "2026-09-15", by: "gin", text: "9th place. Seems familiar from last year… 🤔" },
-    { type: "blunder", date: "2026-09-20", by: "johannes", title: "Up 30 in the projection, losing twenty minutes later",
-      quote: { text: "Idk how all you veterans handle the emotional roller coaster every weekend 😂", by: "johannes" } }
+    // { text: "", by: "", when: "Week 3" }
   ],
 
   // Screenshots and photos. Files go in /media.
