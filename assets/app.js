@@ -217,17 +217,8 @@
 
     h += topThree();
     h += lineup();
-    h += chatWall();
     h += '<div class="wordwall" aria-hidden="true"><span>BUY-IN BOWL</span></div>';
     return h;
-  }
-
-  /* Short date like "Sep 20" from "YYYY-MM-DD" */
-  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-  function txDay(when) {
-    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(when || "");
-    return m ? MON[+m[2] - 1] + " " + (+m[3]) : "";
   }
 
   /* Stadium ribbon board: every team name the league has ever had */
@@ -585,6 +576,611 @@
     return h;
   }
 
+  /* ---------- Stats ---------- */
+  var stYear = null, stFocus = null;
+
+  function mcolor(id) { return (mgr(id).color) || "#9AA3AD"; }
+
+  /* Final place per manager: finished seasons from the career table, running season from the standings */
+  function placeMap(y) {
+    var out = {};
+    if (isDone(y)) {
+      careers(String(y)).forEach(function (r) { if (r.place && r.place < 999) out[r.id] = r.place; });
+    }
+    ((S[y] || {}).standings || []).forEach(function (r) { if (!out[r.manager]) out[r.manager] = r.rank; });
+    return out;
+  }
+
+  /* All weekly games of a season, by manager */
+  function seasonGames(y) {
+    var out = [];
+    ((S[y] || {}).weeks || []).forEach(function (w) {
+      (w.matchups || []).forEach(function (m) {
+        var hs = +m.homeScore, as = +m.awayScore;
+        if (!(hs > 0 || as > 0)) return;
+        out.push({ week: w.week, a: teamManager(y, m.home), as: hs, b: teamManager(y, m.away), bs: as });
+      });
+    });
+    return out;
+  }
+
+  function scoreWeeks(y) {
+    var byWeek = {};
+    seasonGames(y).forEach(function (g) {
+      var w = byWeek[g.week] || (byWeek[g.week] = {});
+      w[g.a] = g.as; w[g.b] = g.bs;
+    });
+    return Object.keys(byWeek).map(Number).sort(function (a, b) { return a - b; })
+      .map(function (k) { return { week: k, s: byWeek[k] }; });
+  }
+
+  function who(id, small) {
+    var m = mgr(id);
+    return '<span class="st-who' + (small ? " sm" : "") + '" data-profile="' + esc(id) + '">' +
+      (has(m.face) ? '<img src="' + esc(m.face) + '" alt="">' : "") + "<b>" + esc(m.name || id) + "</b></span>";
+  }
+
+  function stCard(title, sub, body) {
+    return '<section class="st-card"><div class="st-head"><h3>' + title + "</h3>" +
+      (sub ? "<p>" + sub + "</p>" : "") + "</div>" + body + "</section>";
+  }
+
+  /* 1. Points for against the final place */
+  function chartPointsVsFinish(y) {
+    var st = ((S[y] || {}).standings || []).filter(function (r) { return r.pf; });
+    if (!st.length) return "";
+    var place = placeMap(y), done = isDone(y);
+    var rows = st.slice().sort(function (a, b) { return b.pf - a.pf; });
+    var max = rows[0].pf, min = rows[rows.length - 1].pf;
+    var lo = Math.max(0, min - (max - min) * 0.6);
+    var body = '<div class="st-bars">' + rows.map(function (r, i) {
+      var p = place[r.manager], w = ((r.pf - lo) / (max - lo)) * 100;
+      var champ = done && p === 1;
+      return '<div class="st-bar-row' + (champ ? " champ" : "") + '">' +
+        '<span class="st-rank">' + (i + 1) + "</span>" + who(r.manager) +
+        '<span class="st-track"><span class="st-fill" style="width:' + w.toFixed(1) + "%;background:" + (champ ? "var(--accent)" : mcolor(r.manager)) + '"></span>' +
+        '<span class="st-val">' + num(r.pf, 0) + "</span></span>" +
+        '<span class="st-place' + (p <= 3 ? " top" : "") + '">' + (p ? ordinal(p) : "–") + "</span></div>";
+    }).join("") + "</div>";
+    return stCard("Points vs. " + (done ? "final place" : "current place"),
+      "Bars sorted by points scored" + (done ? ", champion in bronze" : "") + ". Right column: " + (done ? "where they finished." : "where they stand now."), body);
+  }
+
+  /* 3. Draft slot against the finish, as a slope chart */
+  function chartDraftSlope(y) {
+    var d = (S[y] || {}).draftBoard;
+    if (!d || !d.order) return "";
+    var place = placeMap(y), n = d.order.length, done = isDone(y);
+    var W = 360, top = 24, gap = 30, H = top + gap * (n - 1) + 24, x1 = 118, x2 = W - 118;
+    var svg = '<svg class="st-slope" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Draft slot against finish">';
+    svg += '<text x="' + x1 + '" y="12" class="st-ax" text-anchor="middle">Pick</text>' +
+      '<text x="' + x2 + '" y="12" class="st-ax" text-anchor="middle">' + (done ? "Finish" : "Now") + "</text>";
+    d.order.forEach(function (id, i) {
+      var p = place[id]; if (!p) return;
+      var ya = top + i * gap, yb = top + (p - 1) * gap, m = mgr(id);
+      var up = p < i + 1, col = up ? "#A9791C" : p > i + 1 ? "#C4C7CC" : "#5B6068";
+      svg += '<g class="st-sl" data-profile="' + esc(id) + '">' +
+        '<line x1="' + x1 + '" y1="' + ya + '" x2="' + x2 + '" y2="' + yb + '" style="stroke:' + col + ";stroke-width:" + (up ? 2.4 : 1.4) + '"/>' +
+        '<circle cx="' + x1 + '" cy="' + ya + '" r="4" fill="' + mcolor(id) + '"/><circle cx="' + x2 + '" cy="' + yb + '" r="4" fill="' + mcolor(id) + '"/>' +
+        '<text x="' + (x1 - 10) + '" y="' + (ya + 4) + '" text-anchor="end" class="st-lbl">' + esc(m.name || id) + " " + (i + 1) + "</text>" +
+        '<text x="' + (x2 + 10) + '" y="' + (yb + 4) + '" class="st-lbl">' + p + " " + esc(m.name || id) + "</text></g>";
+    });
+    svg += "</svg>";
+    return stCard("Draft slot vs. " + (done ? "finish" : "standing"),
+      "Left: round one pick. Right: " + (done ? "final place" : "current place") + ". Bronze lines climbed, grey lines fell.", svg);
+  }
+
+  /* 5. Luck: actual wins against all-play wins */
+  function chartLuck(y) {
+    var weeks = scoreWeeks(y);
+    if (!weeks.length) return "";
+    var t = {};
+    function row(id) { return t[id] || (t[id] = { id: id, w: 0, l: 0, aw: 0, al: 0 }); }
+    seasonGames(y).forEach(function (g) {
+      if (g.as > g.bs) { row(g.a).w++; row(g.b).l++; } else if (g.bs > g.as) { row(g.b).w++; row(g.a).l++; }
+    });
+    weeks.forEach(function (wk) {
+      var ids = Object.keys(wk.s);
+      ids.forEach(function (a) {
+        ids.forEach(function (b) {
+          if (a === b) return;
+          if (wk.s[a] > wk.s[b]) row(a).aw++; else if (wk.s[a] < wk.s[b]) row(a).al++;
+        });
+      });
+    });
+    var rows = Object.keys(t).map(function (k) {
+      var r = t[k], g = r.w + r.l, ag = r.aw + r.al;
+      r.exp = ag ? (r.aw / ag) * g : 0; r.luck = r.w - r.exp; return r;
+    }).sort(function (a, b) { return b.luck - a.luck; });
+    var maxAbs = Math.max.apply(null, rows.map(function (r) { return Math.abs(r.luck); })) || 1;
+    var body = '<div class="st-luck">' + rows.map(function (r) {
+      var w = (Math.abs(r.luck) / maxAbs) * 50;
+      return '<div class="st-luck-row">' + who(r.id) +
+        '<span class="st-luck-track"><span class="st-luck-mid"></span>' +
+        '<span class="st-luck-bar ' + (r.luck >= 0 ? "pos" : "neg") + '" style="width:' + w.toFixed(1) + '%"></span></span>' +
+        '<span class="st-luck-v">' + (r.luck >= 0 ? "+" : "&minus;") + Math.abs(r.luck).toFixed(1) + "</span>" +
+        '<span class="st-luck-rec">Real ' + r.w + "-" + r.l + " <small>&middot; vs everyone " + r.aw + "-" + r.al + "</small></span></div>";
+    }).join("") + "</div>" +
+      '<div class="st-luck-scale"><span>&larr; Unlucky</span><span>Lucky &rarr;</span></div>';
+    return stCard("Luck index",
+      "Each week your score is also compared with all nine other teams, as if you had played everyone. " +
+      "That gives a fair record (\u201cvs everyone\u201d). The number shows how many wins the real schedule gave or took compared with it.", body);
+  }
+
+  /* 6. Points per week, one line per manager plus the league average */
+  function chartWeekly(y) {
+    var weeks = scoreWeeks(y);
+    if (!weeks.length) return "";
+    var ids = Object.keys(weeks[0].s);
+    var all = []; weeks.forEach(function (w) { ids.forEach(function (id) { if (w.s[id] != null) all.push(w.s[id]); }); });
+    var lo = Math.floor(Math.min.apply(null, all) / 10) * 10 - 10, hi = Math.ceil(Math.max.apply(null, all) / 10) * 10 + 10;
+    var narrow = window.innerWidth < 560;
+    var W = narrow ? 360 : 640, H = narrow ? 240 : 300, L0 = 34, R0 = 12, T0 = 14, B0 = 28;
+    var n = weeks.length;
+    function X(i) { return n === 1 ? (L0 + W - R0) / 2 : L0 + (i / (n - 1)) * (W - L0 - R0); }
+    function Y(v) { return T0 + (1 - (v - lo) / (hi - lo)) * (H - T0 - B0); }
+    var svg = '<svg class="st-lines' + (stFocus ? " focus" : "") + '" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Points per week">';
+    for (var v = lo; v <= hi; v += 20) {
+      svg += '<line x1="' + L0 + '" x2="' + (W - R0) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" class="st-gl"/>' +
+        '<text x="' + (L0 - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end" class="st-ax">' + v + "</text>";
+    }
+    weeks.forEach(function (w, i) {
+      var anc = n > 1 && i === 0 ? "start" : n > 1 && i === n - 1 ? "end" : "middle";
+      svg += '<text x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="' + anc + '" class="st-ax">Wk ' + w.week + "</text>";
+    });
+    var avg = weeks.map(function (w) { var v2 = ids.map(function (id) { return w.s[id]; }); return v2.reduce(function (a, b) { return a + b; }, 0) / v2.length; });
+    svg += '<polyline class="st-avg" points="' + avg.map(function (v2, i) { return X(i) + "," + Y(v2); }).join(" ") + '"/>';
+    ids.forEach(function (id) {
+      var pts = weeks.map(function (w, i) { return w.s[id] != null ? X(i) + "," + Y(w.s[id]) : null; }).filter(Boolean);
+      var on = stFocus === id;
+      svg += '<g class="st-ln' + (on ? " on" : "") + '" style="--c:' + mcolor(id) + '">' +
+        '<polyline points="' + pts.join(" ") + '"/>' +
+        pts.map(function (p) { var q = p.split(","); return '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="3.5"/>'; }).join("") + "</g>";
+    });
+    svg += "</svg>";
+    var legend = '<div class="st-legend">' + ids.map(function (id) {
+      return '<button type="button" class="st-chip' + (stFocus === id ? " on" : "") + '" data-stfocus="' + esc(id) + '" style="--c:' + mcolor(id) + '">' +
+        "<i></i>" + esc(mgr(id).name || id) + "</button>";
+    }).join("") + '<span class="st-chip avg"><i></i>League average</span></div>';
+    return stCard("Points per week", "Tap a name to highlight one manager.", legend + svg);
+  }
+
+  /* 7. Consistency: average against spread */
+  function chartConsistency(y) {
+    var weeks = scoreWeeks(y);
+    if (!weeks.length) return "";
+    if (weeks.length < 3) {
+      return stCard("Consistency", "Average score against how much it swings, from steady to wild card.",
+        '<p class="st-wait">Unlocks after week 3. Two weeks of scores are not enough to tell steady from lucky.</p>');
+    }
+    var ids = Object.keys(weeks[0].s);
+    var pts = ids.map(function (id) {
+      var v = weeks.map(function (w) { return w.s[id]; }).filter(function (x) { return x != null; });
+      var mean = v.reduce(function (a, b) { return a + b; }, 0) / v.length;
+      var sd = Math.sqrt(v.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / v.length);
+      return { id: id, mean: mean, sd: sd };
+    });
+    var narrow = window.innerWidth < 560;
+    var W = narrow ? 360 : 640, H = narrow ? 280 : 320, L0 = 30, R0 = 60, T0 = 16, B0 = 36;
+    var mx = pts.map(function (p) { return p.mean; }), sx = pts.map(function (p) { return p.sd; });
+    var xlo = Math.floor(Math.min.apply(null, mx) / 5) * 5 - 5, xhi = Math.ceil(Math.max.apply(null, mx) / 5) * 5 + 5;
+    var yhi = Math.ceil(Math.max.apply(null, sx) / 5) * 5 + 5;
+    function X(v) { return L0 + ((v - xlo) / (xhi - xlo)) * (W - L0 - R0); }
+    function Y(v) { return T0 + (1 - v / yhi) * (H - T0 - B0); }
+    var svg = '<svg class="st-scatter" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Consistency">';
+    svg += '<text x="' + (W - R0) + '" y="' + (H - 8) + '" text-anchor="end" class="st-ax">Average points &rarr;</text>' +
+      '<text x="' + (L0 + 4) + '" y="' + (T0 + 10) + '" class="st-ax">&uarr; Swing</text>' +
+      '<line x1="' + L0 + '" x2="' + (W - R0) + '" y1="' + (H - B0) + '" y2="' + (H - B0) + '" class="st-gl"/>' +
+      '<line x1="' + L0 + '" x2="' + L0 + '" y1="' + T0 + '" y2="' + (H - B0) + '" class="st-gl"/>';
+    pts.forEach(function (p) {
+      svg += '<g class="st-dot" data-profile="' + esc(p.id) + '"><circle cx="' + X(p.mean) + '" cy="' + Y(p.sd) + '" r="7" fill="' + mcolor(p.id) + '"/>' +
+        '<text x="' + (X(p.mean) + 11) + '" y="' + (Y(p.sd) + 4) + '" class="st-lbl">' + esc(mgr(p.id).name || p.id) + "</text></g>";
+    });
+    svg += "</svg>";
+    return stCard("Consistency", "Right is more points, up is bigger swings. Bottom right is the team you want.", svg);
+  }
+
+  /* Played games per manager from the weekly scores: wins, losses, points for and against */
+  function gameTotals(y) {
+    var t = {};
+    function r(id) { return t[id] || (t[id] = { id: id, w: 0, l: 0, pf: 0, pa: 0, g: 0, cw: 0, cl: 0 }); }
+    seasonGames(y).forEach(function (g) {
+      var A = r(g.a), B = r(g.b), close = Math.abs(g.as - g.bs) < 10;
+      A.pf += g.as; A.pa += g.bs; B.pf += g.bs; B.pa += g.as; A.g++; B.g++;
+      if (g.as > g.bs) { A.w++; B.l++; if (close) { A.cw++; B.cl++; } }
+      else if (g.bs > g.as) { B.w++; A.l++; if (close) { B.cw++; A.cl++; } }
+    });
+    return t;
+  }
+
+  function barRows(rows, opts) {
+    var max = Math.max.apply(null, rows.map(function (r) { return r.v; }));
+    var min = Math.min.apply(null, rows.map(function (r) { return r.v; }));
+    var lo = opts.zero ? 0 : Math.max(0, min - (max - min) * 0.6);
+    var hi = Math.max(max, opts.mark || 0);
+    return '<div class="st-bars">' + rows.map(function (r, i) {
+      var w = ((r.v - lo) / (hi - lo)) * 100;
+      return '<div class="st-bar-row">' + '<span class="st-rank">' + (i + 1) + "</span>" + who(r.id) +
+        '<span class="st-track"><span class="st-fill" style="width:' + Math.max(2, w).toFixed(1) + "%;background:" + (r.color || mcolor(r.id)) + '"></span>' +
+        (opts.mark ? '<span class="st-mark" style="left:' + (((opts.mark - lo) / (hi - lo)) * 100).toFixed(1) + '%"></span>' : "") +
+        '<span class="st-val">' + r.label + "</span></span>" +
+        '<span class="st-place">' + (r.side || "") + "</span></div>";
+    }).join("") + "</div>";
+  }
+
+  /* Strength of schedule: points scored against each manager */
+  function chartSchedule(y) {
+    var t = gameTotals(y), ids = Object.keys(t);
+    if (!ids.length) return "";
+    var rows = ids.map(function (id) { return { id: id, v: t[id].pa, label: num(t[id].pa, 0), side: num(t[id].pa / t[id].g, 1) }; })
+      .sort(function (a, b) { return b.v - a.v; });
+    return stCard("Strength of schedule", "Points scored against each manager so far, toughest first. Right: per game.", barRows(rows, {}));
+  }
+
+  /* Close games: decided by less than 10 points */
+  function chartClose(y) {
+    var t = gameTotals(y), ids = Object.keys(t);
+    if (!ids.length) return "";
+    var rows = ids.map(function (id) { return t[id]; })
+      .sort(function (a, b) { return (b.cw - b.cl) - (a.cw - a.cl) || b.cw - a.cw; });
+    var any = rows.some(function (r) { return r.cw + r.cl; });
+    var body = '<div class="st-close">' + rows.map(function (r) {
+      var n = r.cw + r.cl;
+      return '<div class="st-close-row">' + who(r.id) + '<span class="st-close-dots">' +
+        new Array(r.cw + 1).join('<i class="w"></i>') + new Array(r.cl + 1).join('<i class="l"></i>') + "</span>" +
+        '<span class="st-close-rec">' + (n ? r.cw + "-" + r.cl : '<span class="muted">none yet</span>') + "</span></div>";
+    }).join("") + "</div>";
+    return stCard("Close games", "Record in games decided by less than 10 points. Bronze is a win." + (any ? "" : " None so far."), body);
+  }
+
+  /* Pace: current points per game over a full regular season, against the record */
+  function chartPace(y) {
+    var t = gameTotals(y), ids = Object.keys(t);
+    if (!ids.length || isDone(y)) return "";
+    var reg = regWeeks(y), rec = null;
+    years().forEach(function (yy) {
+      var pl = (S[yy] || {}).pointsLeader;
+      if (yy !== y && pl && pl.points && (!rec || pl.points > rec.points)) rec = { points: +pl.points, id: pl.manager, y: yy };
+    });
+    var rows = ids.map(function (id) { var p = t[id].pf / t[id].g * reg; return { id: id, v: p, label: num(p, 0) }; })
+      .sort(function (a, b) { return b.v - a.v; });
+    var sub = "Points per game so far, stretched over " + reg + " weeks." +
+      (rec ? " The line is the season record: " + num(rec.points, 2) + " by " + esc(mgr(rec.id).name || "") + " in " + rec.y + "." : "");
+    return stCard("On pace for", sub, barRows(rows, { mark: rec ? rec.points : 0 }));
+  }
+
+  /* Year over year: points per game against the season before */
+  function chartForm(y) {
+    var ys = years().slice().sort(function (a, b) { return a - b; }), i = ys.indexOf(y);
+    if (i < 1) return "";
+    var prev = ys[i - 1];
+    function ppg(yy) {
+      var out = {}, t = gameTotals(yy);
+      if (Object.keys(t).length) { Object.keys(t).forEach(function (id) { out[id] = t[id].pf / t[id].g; }); return out; }
+      ((S[yy] || {}).standings || []).forEach(function (r) {
+        var g = (+r.w || 0) + (+r.l || 0) + (+r.t || 0); if (g && r.pf) out[r.manager] = r.pf / g;
+      });
+      return out;
+    }
+    var a = ppg(prev), b = ppg(y);
+    var rows = Object.keys(b).filter(function (id) { return a[id]; })
+      .map(function (id) { return { id: id, a: a[id], b: b[id], d: b[id] - a[id] }; })
+      .sort(function (x, z) { return z.d - x.d; });
+    if (!rows.length) return "";
+    var max = Math.max.apply(null, rows.map(function (r) { return Math.abs(r.d); })) || 1;
+    var body = '<div class="st-luck">' + rows.map(function (r) {
+      var w = (Math.abs(r.d) / max) * 50;
+      return '<div class="st-luck-row">' + who(r.id) +
+        '<span class="st-luck-track"><span class="st-luck-mid"></span>' +
+        '<span class="st-luck-bar ' + (r.d >= 0 ? "pos" : "neg") + '" style="width:' + w.toFixed(1) + '%"></span></span>' +
+        '<span class="st-luck-v">' + (r.d >= 0 ? "+" : "&minus;") + Math.abs(r.d).toFixed(1) + "</span>" +
+        '<span class="st-luck-rec">' + num(r.a, 1) + " &rarr; " + num(r.b, 1) + " <small>per game</small></span></div>";
+    }).join("") + "</div>";
+    return stCard("Form: " + prev + " vs. " + y, "Points per game compared with the season before, for everyone who played both.", body);
+  }
+
+  /* The first player taken at each position */
+  function chartFirsts(y) {
+    var d = (S[y] || {}).draftBoard;
+    if (!d || !d.order) return "";
+    var n = d.order.length, first = {}, rounds = 0;
+    d.order.forEach(function (id) { rounds = Math.max(rounds, (d.picks[id] || []).length); });
+    for (var r = 0; r < rounds; r++) {
+      d.order.forEach(function (id, slot) {
+        var p = (d.picks[id] || [])[r]; if (!p || !p[1]) return;
+        var pos = p[1].split(" ")[0], ov = r * n + (r % 2 ? n - slot : slot + 1);
+        if (!first[pos] || ov < first[pos].ov) first[pos] = { ov: ov, name: p[0], id: id };
+      });
+    }
+    var body = '<div class="st-firsts">' + ["QB", "RB", "WR", "TE", "K", "DEF"].filter(function (p) { return first[p]; }).map(function (p) {
+      var f = first[p];
+      return '<div class="st-first"><span class="dr-p p-' + p + '">' + p + "</span>" +
+        '<span class="st-first-n"><b>' + esc(f.name) + "</b><small>Pick " + f.ov + "</small></span>" + who(f.id, true) + "</div>";
+    }).join("") + "</div>";
+    return stCard("First off the board", "The first player taken at each position.", body);
+  }
+
+  /* League-wide: how many of each position went in each round */
+  function chartHeat(y) {
+    var d = (S[y] || {}).draftBoard;
+    if (!d || !d.order) return "";
+    var P = ["QB", "RB", "WR", "TE", "K", "DEF"], rounds = 0, c = [];
+    d.order.forEach(function (id) { rounds = Math.max(rounds, (d.picks[id] || []).length); });
+    for (var r = 0; r < rounds; r++) {
+      c[r] = {};
+      d.order.forEach(function (id) {
+        var p = (d.picks[id] || [])[r]; if (!p || !p[1]) return;
+        var pos = p[1].split(" ")[0]; c[r][pos] = (c[r][pos] || 0) + 1;
+      });
+    }
+    var n = d.order.length;
+    var h = '<table class="st-heat"><thead><tr><th>Rd</th>' + P.map(function (p) { return "<th>" + p + "</th>"; }).join("") + "</tr></thead><tbody>";
+    c.forEach(function (row, r) {
+      h += "<tr><th>" + (r + 1) + "</th>" + P.map(function (p) {
+        var v = row[p] || 0, a = v / n;
+        return '<td class="p-' + p + '"' + (v ? ' style="--a:' + (0.25 + a * 0.75).toFixed(2) + '"' : ' style="--a:0"') + ">" + (v || "") + "</td>";
+      }).join("") + "</tr>";
+    });
+    h += "</tbody></table>";
+    return stCard("Position runs", "How many of each position went in every round, league-wide.", h);
+  }
+
+  /* ---------- Playoff odds: simulate the rest of the regular season ---------- */
+  var oddsCache = {};
+
+  function regWeeks(y) {
+    var pw = ((S[y] || {}).playoffs || {}).weeks || {};
+    var first = Math.min.apply(null, Object.keys(pw).map(function (k) { return +pw[k]; }).filter(function (v) { return v > 0; }));
+    return isFinite(first) ? first - 1 : 14;
+  }
+
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function playoffOdds(y) {
+    var weeks = scoreWeeks(y);
+    var key = y + ":" + weeks.length;
+    if (oddsCache[key]) return oddsCache[key];
+    var t = gameTotals(y), ids = Object.keys(t);
+    if (!ids.length) return null;
+    var reg = regWeeks(y), played = weeks.length ? weeks[weeks.length - 1].week : 0;
+    var spots = ((L.format || {}).playoffTeams) || 6, byes = 2;
+
+    /* Team strength: own average pulled toward the league average while the sample is small */
+    var all = [], sq = 0;
+    weeks.forEach(function (w) { ids.forEach(function (id) { if (w.s[id] != null) all.push(w.s[id]); }); });
+    var lg = all.reduce(function (a, b) { return a + b; }, 0) / all.length;
+    var mean = {};
+    ids.forEach(function (id) {
+      var n = t[id].g, avg = t[id].pf / n, K = 4;
+      mean[id] = (n * avg + K * lg) / (n + K);
+      weeks.forEach(function (w) { if (w.s[id] != null) sq += Math.pow(w.s[id] - avg, 2); });
+    });
+    var sdObs = Math.sqrt(sq / Math.max(1, all.length - ids.length));
+    var sd = weeks.length >= 4 ? Math.max(15, sdObs) : 22;
+
+    /* Known future matchups from the weeks list, random pairings otherwise */
+    var sched = {};
+    ((S[y] || {}).weeks || []).forEach(function (w) {
+      if (w.week > played && w.week <= reg && (w.matchups || []).length) {
+        sched[w.week] = w.matchups.map(function (m) { return [teamManager(y, m.home), teamManager(y, m.away)]; });
+      }
+    });
+    var knownSched = Object.keys(sched).length === reg - played;
+
+    var R = rng(9001 + played * 131), N = 10000;
+    function gauss() { var u = R() || 1e-9, v = R(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+    var res = {}; ids.forEach(function (id) { res[id] = { po: 0, bye: 0, wins: 0 }; });
+    var byWins = {};
+
+    for (var s = 0; s < N; s++) {
+      var W = {}, PF = {};
+      ids.forEach(function (id) { W[id] = t[id].w; PF[id] = t[id].pf; });
+      for (var wk = played + 1; wk <= reg; wk++) {
+        var pairs = sched[wk];
+        if (!pairs) {
+          var sh = ids.slice();
+          for (var i = sh.length - 1; i > 0; i--) { var j = Math.floor(R() * (i + 1)), tmp = sh[i]; sh[i] = sh[j]; sh[j] = tmp; }
+          pairs = []; for (var k = 0; k + 1 < sh.length; k += 2) pairs.push([sh[k], sh[k + 1]]);
+        }
+        pairs.forEach(function (p) {
+          var a = mean[p[0]] + sd * gauss(), b = mean[p[1]] + sd * gauss();
+          PF[p[0]] += a; PF[p[1]] += b;
+          if (a > b) W[p[0]]++; else W[p[1]]++;
+        });
+      }
+      var order = ids.slice().sort(function (a, b) { return W[b] - W[a] || PF[b] - PF[a]; });
+      order.forEach(function (id, rank) {
+        var made = rank < spots;
+        if (made) res[id].po++;
+        if (rank < byes) res[id].bye++;
+        res[id].wins += W[id];
+        var b = byWins[W[id]] || (byWins[W[id]] = [0, 0]);
+        b[1]++; if (made) b[0]++;
+      });
+    }
+    var out = {
+      rows: ids.map(function (id) {
+        return { id: id, w: t[id].w, l: t[id].l, po: res[id].po / N, bye: res[id].bye / N, pw: res[id].wins / N };
+      }).sort(function (a, b) { return b.po - a.po || b.bye - a.bye; }),
+      byWins: byWins, spots: spots, reg: reg, played: played, knownSched: knownSched
+    };
+    oddsCache[key] = out;
+    return out;
+  }
+
+  function pct(p) {
+    if (p >= 0.995 && p < 1) return ">99%";
+    if (p > 0 && p < 0.005) return "<1%";
+    return Math.round(p * 100) + "%";
+  }
+
+  function chartPlayoffOdds(y) {
+    if (isDone(y)) return "";
+    var o = playoffOdds(y);
+    if (!o) return "";
+    var body = '<div class="st-odds">' +
+      '<div class="st-odds-row head"><span></span><span>W-L</span><span>Playoffs</span><span>Bye</span><span>Proj.</span></div>' +
+      o.rows.map(function (r, i) {
+        return '<div class="st-odds-row' + (i === o.spots - 1 ? " cut" : "") + '">' + who(r.id) +
+          '<span class="st-odds-rec">' + r.w + "-" + r.l + "</span>" +
+          '<span class="st-odds-bar"><span class="st-odds-fill" style="width:' + (r.po * 100).toFixed(1) + '%"></span><b>' + pct(r.po) + "</b></span>" +
+          '<span class="st-odds-bye">' + pct(r.bye) + "</span>" +
+          '<span class="st-odds-pw">' + num(r.pw, 1) + "&ndash;" + num(o.reg - r.pw, 1) + "</span></div>";
+      }).join("") + "</div>";
+    var sub = "10,000 simulated seasons from week " + (o.played + 1) + " to " + o.reg + ". Top " + o.spots + " make it, top 2 get a bye. " +
+      (o.knownSched ? "Uses the real schedule." : "The remaining schedule isn't on file, so opponents are drawn at random.");
+    return stCard("Playoff odds", sub, body);
+  }
+
+  /* What a given final record was worth across all simulations, plus the real cut lines */
+  function chartWinsNeeded(y) {
+    if (isDone(y)) return "";
+    var o = playoffOdds(y);
+    if (!o) return "";
+    var ks = Object.keys(o.byWins).map(Number).sort(function (a, b) { return a - b; })
+      .filter(function (k) { return o.byWins[k][1] >= 50; });
+    function pr(k) { return o.byWins[k][0] / o.byWins[k][1]; }
+    var lowK = ks.filter(function (k) { return pr(k) < 0.005; }).pop();
+    var highK = ks.filter(function (k) { return pr(k) >= 0.995; })[0];
+    ks = ks.filter(function (k) { return (lowK == null || k >= lowK) && (highK == null || k <= highK); });
+    var safe = ks.filter(function (k) { return pr(k) >= 0.95; })[0];
+    var body = (safe != null ? '<p class="st-need-lead"><b>' + safe + " wins</b> is the safe line: " + pct(pr(safe)) + " of those seasons ended in the playoffs.</p>" : "") +
+      '<div class="st-need">' + ks.map(function (k) {
+      var b = o.byWins[k], p = b[0] / b[1];
+      return '<div class="st-need-c' + (p >= 0.9 ? " safe" : p >= 0.5 ? " likely" : "") + '">' +
+        "<b>" + k + "</b><small>wins</small><span>" + pct(p) + "</span></div>";
+    }).join("") + "</div>";
+    var hist = years().filter(function (yy) { return isDone(yy); }).map(function (yy) {
+      var st = ((S[yy] || {}).standings || []).slice().sort(function (a, b) { return a.rank - b.rank; });
+      var last = st[o.spots - 1], out = st[o.spots];
+      return last ? "In " + yy + " the last team in went " + last.w + "-" + last.l +
+        (out ? ", the first team out " + out.w + "-" + out.l : "") + "." : "";
+    }).filter(Boolean).join(" ");
+    return stCard("How many wins are enough?",
+      "Share of simulated seasons where a " + o.reg + "-week record made the playoffs." + (hist ? " " + hist : ""), body);
+  }
+
+  function renderStats() {
+    var ys = years();
+    var h = '<div class="wrap page">';
+    h += '<div class="page-head"><h1 class="page-title">Stats</h1>' +
+      '<p class="page-kicker">How much was skill, how much was the schedule.</p></div>';
+    if (!ys.length) return h + nothing("No seasons on file yet.") + "</div>";
+    if (ys.indexOf(stYear) === -1) stYear = ys[0];
+    h += '<div class="tabs">' + ys.map(function (y) {
+      var ed = edition(y);
+      return '<button type="button" class="tab has-logo' + (y === stYear ? " on" : "") + '" data-styear="' + y + '">' +
+        seasonLogo(y, "tab-logo") + '<span class="tab-txt"><b>' + y + "</b><small>Buy-In Bowl" +
+        (ed ? ' <span class="rn">' + ed + "</span>" : "") + "</small></span></button>";
+    }).join("") + "</div>";
+
+    var y = stYear, weekly = scoreWeeks(y).length > 0;
+    if (weekly && !isDone(y)) {
+      h += '<h2 class="sec">Playoff race</h2><div class="st-grid">' + chartPlayoffOdds(y) + chartWinsNeeded(y) + "</div>";
+    }
+    h += '<h2 class="sec">Luck and the table</h2><div class="st-grid">';
+    h += chartPointsVsFinish(y);
+    h += weekly ? chartLuck(y) : stCard("Luck index", "Real wins against the all-play record.",
+      '<p class="st-wait">Needs weekly scores, and the ' + y + " weeks aren't on file.</p>");
+    if (weekly) h += chartSchedule(y) + chartClose(y);
+    h += "</div>";
+
+    if (weekly) {
+      h += '<h2 class="sec">Week by week</h2><div class="st-grid">' + chartWeekly(y) + chartConsistency(y) + chartPace(y) + chartForm(y) + "</div>";
+    }
+
+    if ((S[y] || {}).draftBoard) {
+      h += '<h2 class="sec">The draft</h2><div class="st-grid">' + chartDraftSlope(y) + chartFirsts(y) + chartHeat(y) + "</div>";
+    }
+
+    return h + "</div>";
+  }
+
+  /* ---------- Drafts ---------- */
+  var dYear = null;
+
+  function draftYears() {
+    return years().filter(function (y) { var d = (S[y] || {}).draftBoard; return d && d.order && d.order.length; });
+  }
+
+  /* "Ja'Marr Chase" -> "J. Chase"; defenses and single names stay as they are */
+  function shortName(n, pos) {
+    if (!n || /^DEF/.test(pos || "")) return n || "";
+    var i = n.indexOf(" ");
+    return i > 0 ? n.charAt(0) + ". " + n.slice(i + 1) : n;
+  }
+
+  function renderDrafts() {
+    var ys = draftYears();
+    var h = '<div class="wrap page">';
+    h += '<div class="page-head"><h1 class="page-title">Drafts</h1>' +
+      '<p class="page-kicker">Who picked when, and who they took.</p></div>';
+    if (!ys.length) return h + nothing("No drafts on file yet.") + "</div>";
+    if (ys.indexOf(dYear) === -1) dYear = ys[0];
+
+    h += '<div class="tabs">' + ys.map(function (y) {
+      var ed = edition(y);
+      return '<button type="button" class="tab has-logo' + (y === dYear ? " on" : "") + '" data-dyear="' + y + '">' +
+        seasonLogo(y, "tab-logo") + '<span class="tab-txt"><b>' + y + "</b><small>Buy-In Bowl" +
+        (ed ? ' <span class="rn">' + ed + "</span>" : "") + "</small></span></button>";
+    }).join("") + "</div>";
+
+    var s = S[dYear], d = s.draftBoard, meta = s.draft || {};
+    var n = d.order.length, rounds = 0;
+    d.order.forEach(function (id) { rounds = Math.max(rounds, (d.picks[id] || []).length); });
+
+    if (has(meta.date) || has(meta.location)) {
+      h += '<p class="dr-meta">' + [esc(meta.date || ""), esc(meta.location || "")].filter(function (x) { return x; }).join(" &middot; ") + "</p>";
+    }
+
+    /* Draft order: the round one slots */
+    h += '<section class="block"><h2 class="sec">Draft order</h2><ol class="dr-order">';
+    d.order.forEach(function (id, i) {
+      var m = mgr(id);
+      h += '<li data-profile="' + esc(id) + '" tabindex="0"><span class="dr-slot">' + (i + 1) + "</span>" +
+        (has(m.face) ? '<img src="' + esc(m.face) + '" alt="">' : "") +
+        '<span class="dr-who"><b>' + esc(m.name || id) + flagFor(id) + "</b><small>" + esc((m.teams || {})[dYear] || "") + "</small></span></li>";
+    });
+    h += "</ol></section>";
+
+    /* The board: rounds down, teams across in draft order, snake shown by the pick numbers */
+    h += '<section class="block"><h2 class="sec">Board</h2>';
+    h += '<div class="dr-legend">' + ["QB", "RB", "WR", "TE", "K", "DEF"].map(function (p) {
+      return '<span class="dr-p p-' + p + '">' + p + "</span>";
+    }).join("") + "<span>Snake draft, " + rounds + " rounds</span></div>";
+    h += '<div class="table-scroll dr-scroll"><table class="dr-board"><thead><tr><th class="dr-rh">Rd</th>';
+    d.order.forEach(function (id) {
+      var m = mgr(id);
+      h += '<th data-profile="' + esc(id) + '">' + (has(m.face) ? '<img src="' + esc(m.face) + '" alt="">' : "") +
+        "<span>" + esc(m.name || id) + "</span></th>";
+    });
+    h += "</tr></thead><tbody>";
+    for (var r = 0; r < rounds; r++) {
+      h += '<tr><th class="dr-rh">' + (r + 1) + '<span class="dr-dir">' + (r % 2 ? "&larr;" : "&rarr;") + "</span></th>";
+      d.order.forEach(function (id, slot) {
+        var p = (d.picks[id] || [])[r] || ["", ""];
+        var overall = r * n + (r % 2 ? n - slot : slot + 1);
+        var pos = String(p[1] || "").split(" ")[0];
+        if (!has(p[0])) {
+          h += '<td class="dr-cell empty" title="Pick ' + overall + '"><i>Missed</i><small>#' + overall + "</small></td>";
+        } else {
+          h += '<td class="dr-cell p-' + esc(pos) + '" title="' + esc(p[0]) + " &middot; " + esc(p[1]) + " &middot; pick " + overall + '">' +
+            "<b>" + esc(shortName(p[0], p[1])) + "</b><small>" + esc(pos) + " &middot; #" + overall + "</small></td>";
+        }
+      });
+      h += "</tr>";
+    }
+    h += "</tbody></table></div></section>";
+    return h + "</div>";
+  }
+
   /* ---------- Former members ---------- */
   function renderFormer() {
     var cur = years()[0];
@@ -632,60 +1228,6 @@
   function ordinal(n) {
     var s = ["th", "st", "nd", "rd"], v = n % 100;
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
-  }
-
-  /* ---------- Home: straight from the group chat ---------- */
-  var chatOpen = false;
-
-  function chatWho(id, cls) {
-    var m = mgr(id);
-    return '<span class="gc-who ' + (cls || "") + '" data-profile="' + esc(id) + '">' +
-      (has(m.face) ? '<img src="' + esc(m.face) + '" alt="">' : "") + "<b>" + esc(m.name || id) + "</b></span>";
-  }
-
-  function chatWall() {
-    var all = [];
-    years().forEach(function (y) {
-      ((S[y] || {}).quotes || []).forEach(function (q) { if (q && (q.text || q.title)) all.push(q); });
-    });
-    if (!all.length) return "";
-    all.sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")); });
-
-    /* Blunders first, then chat lines; each group newest first */
-    var groups = [
-      { title: "Blunders", items: all.filter(function (q) { return q.type === "blunder"; }) },
-      { title: "Chat", items: all.filter(function (q) { return q.type !== "blunder"; }) }
-    ].filter(function (g) { return g.items.length; });
-
-    var h = '<div class="wrap"><section class="block gc">';
-    h += '<h2 class="sec">Straight from the group chat</h2>';
-    groups.forEach(function (g) {
-      var shown = chatOpen ? g.items : g.items.slice(0, 3);
-      h += '<h3 class="gc-sub">' + g.title + " <span>" + g.items.length + "</span></h3>";
-      h += '<div class="gc-grid">';
-      shown.forEach(function (q) {
-        var d = txDay(q.date), yr = String(q.date || "").slice(0, 4);
-        if (q.type === "blunder") {
-          h += '<article class="gc-card blunder"><div class="gc-top"><span class="gc-tag">Blunder</span>' +
-            '<span class="gc-date">' + esc(d) + (yr ? ", " + yr : "") + "</span></div>" +
-            '<div class="gc-title">' + esc(q.title) + "</div>" +
-            (q.quote && q.quote.by === q.by ? "" : chatWho(q.by, "gc-by"));
-          if (q.quote && q.quote.text) h += '<div class="gc-line"><p>' + esc(q.quote.text) + "</p>" + chatWho(q.quote.by, "small") + "</div>";
-        } else {
-          h += '<article class="gc-card"><div class="gc-top"><span class="gc-tag quote">Chat</span>' +
-            '<span class="gc-date">' + esc(d) + (yr ? ", " + yr : "") + "</span></div>" +
-            '<blockquote class="gc-quote">' + esc(q.text) + "</blockquote>" + chatWho(q.by, "gc-by");
-          if (q.reply && q.reply.text) h += '<div class="gc-line"><p>' + esc(q.reply.text) + "</p>" + chatWho(q.reply.by, "small") + "</div>";
-        }
-        h += "</article>";
-      });
-      h += "</div>";
-    });
-    if (groups.some(function (g) { return g.items.length > 3; })) {
-      h += '<button type="button" class="tm-more" data-chat-toggle>' +
-        (chatOpen ? "Show fewer" : "Show all " + all.length) + "</button>";
-    }
-    return h + "</section></div>";
   }
 
   /* ---------- Wall of Shame ---------- */
@@ -1865,10 +2407,12 @@
   var current = "home";
 
   function render(route, keepScroll) {
-    current = ["table", "champions", "shame", "records", "former"].indexOf(route) !== -1 ? route : "home";
+    current = ["table", "champions", "shame", "records", "stats", "drafts", "former"].indexOf(route) !== -1 ? route : "home";
     root.innerHTML = current === "table" ? renderTable() :
                      current === "champions" ? renderChampions() :
                      current === "shame" ? renderShame() :
+                     current === "stats" ? renderStats() :
+                     current === "drafts" ? renderDrafts() :
                      current === "former" ? renderFormer() :
                      current === "records" ? renderRecords() : renderLanding();
     document.querySelectorAll("#nav [data-route]").forEach(function (b) {
@@ -1890,7 +2434,7 @@
     var hh = location.hash || "";
     return /#\/table/.test(hh) ? "table" : /#\/champions/.test(hh) ? "champions" :
            /#\/records/.test(hh) ? "records" : /#\/shame/.test(hh) ? "shame" :
-           /#\/former/.test(hh) ? "former" : "home";
+           /#\/stats/.test(hh) ? "stats" : /#\/drafts/.test(hh) ? "drafts" : /#\/former/.test(hh) ? "former" : "home";
   }
 
   document.addEventListener("click", function (e) {
@@ -1908,8 +2452,14 @@
       return;
     }
 
-    var gc = el.closest("[data-chat-toggle]");
-    if (gc) { e.preventDefault(); chatOpen = !chatOpen; render(current, true); return; }
+    var sy = el.closest("[data-styear]");
+    if (sy) { e.preventDefault(); stYear = +sy.getAttribute("data-styear"); stFocus = null; render(current, true); return; }
+
+    var sf = el.closest("[data-stfocus]");
+    if (sf) { e.preventDefault(); var f = sf.getAttribute("data-stfocus"); stFocus = stFocus === f ? null : f; render(current, true); return; }
+
+    var dy = el.closest("[data-dyear]");
+    if (dy) { e.preventDefault(); dYear = +dy.getAttribute("data-dyear"); render(current, true); return; }
 
     var tab = el.closest("[data-mtab]");
     if (tab) {
@@ -1946,6 +2496,8 @@
       '<button type="button" data-route="shame">Shame</button>' +
       '<button type="button" data-route="records">Records</button>' +
       '<button type="button" data-route="table">All-time</button>' +
+      '<button type="button" data-route="stats">Stats</button>' +
+      '<button type="button" data-route="drafts">Drafts</button>' +
       '<button type="button" data-route="former">Former</button>';
     var mark = document.getElementById("mark");
     mark.innerHTML = "The Buy-In <span>Bowl</span>";
@@ -1960,6 +2512,7 @@
     clearTimeout(rsz);
     rsz = setTimeout(function () {
       if (current === "table" && measureCharts()) render("table", true);
+      if (current === "stats") render("stats", true);
     }, 250);
   });
 
