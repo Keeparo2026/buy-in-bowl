@@ -427,12 +427,6 @@ footer.site {
 
 /* ---------- Season logos ---------- */
 .slogo { display: block; border-radius: 50%; }
-.hero-logo { margin-bottom: 1.5rem; }
-.hero-logo .slogo {
-  width: clamp(5rem, 18vw, 7.5rem); height: auto;
-  box-shadow: 0 10px 30px rgba(22, 24, 28, 0.14);
-  animation: logoin 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
 @keyframes logoin { from { opacity: 0; transform: scale(0.88) rotate(-6deg); } to { opacity: 1; transform: none; } }
 
 .tab.has-logo { flex-direction: row; align-items: center; gap: 0.6rem; padding: 0.45rem 0.95rem 0.45rem 0.5rem; }
@@ -1352,3 +1346,97 @@ html.sheet-lock, html.sheet-lock body { overflow: hidden; }
 .st-need-lead b { color: var(--accent-deep); }
 .st-luck-scale { display: flex; justify-content: space-between; margin: 0.6rem 0 0; padding: 0 3rem 0 6.6rem; font-size: 0.68rem; font-weight: 700; color: var(--muted); }
 @media (max-width: 30rem) { .st-luck-scale { padding: 0 2.3rem 0 6.3rem; } }
+
+/* ---------- Home: if the season ended today ---------- */
+.ie { margin-bottom: 2.4rem; }
+.ie-sub { margin: -0.4rem 0 1rem; font-size: 0.85rem; color: var(--muted); }
+.ie-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+.ie-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.5rem; }
+.ie-head b { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink); }
+.ie-head span { font-size: 0.7rem; color: var(--muted); }
+.ie-fin { margin-top: 1rem; }
+.ie-game { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; margin-bottom: 0.6rem; }
+.ie-game.out { background: #F4F3F0; border-color: transparent; }
+.ie-row { display: flex; align-items: center; gap: 0.55rem; padding: 0.5rem 0.7rem; cursor: pointer; }
+.ie-row + .ie-row { border-top: 1px solid #ECEDEF; }
+.ie-row.tbd { cursor: default; background: #FBFAF8; }
+.ie-row.tbd b { font-weight: 500; color: var(--muted); font-size: 0.8rem; }
+.ie-seed { flex: none; width: 1.1rem; font-family: var(--display); font-size: 1.05rem; color: var(--ink-2); text-align: center; }
+.ie-row img { width: 1.8rem; height: 1.8rem; border-radius: 50%; flex: none; }
+.ie-nm { flex: 1; min-width: 0; }
+.ie-nm b { display: block; font-size: 0.86rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ie-nm small { display: block; font-size: 0.7rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ie-rec { font-size: 0.8rem; font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.ie-bye { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); background: var(--accent-soft); border-radius: 999px; padding: 0.12rem 0.45rem; }
+.ie-note { padding: 0 0.7rem 0.55rem 2.35rem; font-size: 0.74rem; color: var(--ink-2); margin-top: -0.2rem; }
+.ie-row:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+@media (max-width: 52rem) { .ie-cols { grid-template-columns: 1fr; } }
+
+/* ---------- Hero: season coins ---------- */
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 2rem; align-items: center; }
+.hero-txt { min-width: 0; }
+.coins {
+  --rx: 0deg; --ry: 0deg; --size: clamp(11rem, 24vw, 17rem);
+  position: relative; justify-self: center;
+  width: calc(var(--size) * (1 + (var(--n) - 1) * 0.4));
+  height: calc(var(--size) * (1 + (var(--n) - 1) * 0.16));
+  perspective: 900px;
+}
+.coins-tilt { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(var(--ry)); transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+.coin {
+  position: absolute; right: 0; bottom: 0;
+  width: var(--size); height: var(--size); padding: 0; border: 0; background: none; cursor: pointer;
+  border-radius: 50%;
+  transform: translate(calc(var(--i) * var(--size) * -0.4), calc(var(--i) * var(--size) * -0.16)) scale(calc(1 - var(--i) * 0.14)) rotate(calc(var(--i) * -10deg));
+  transform-origin: 50% 50%;
+  z-index: calc(10 - var(--i));
+  animation: coinin 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i) * 0.12s);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), filter 0.3s ease;
+}
+.coin img {
+  display: block; width: 100%; height: 100%; border-radius: 50%;
+  box-shadow: 0 5px 0 #6E5117, 0 7px 0 #4F3A10, 0 22px 40px rgba(22, 24, 28, 0.28);
+}
+.coin:not(.front) { filter: saturate(0.8) brightness(0.93); }
+.coin:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+/* a slow glint across the newest coin */
+.coin.front::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 240, 200, 0.55) 48%, transparent 58%);
+  background-size: 250% 250%; background-position: 120% 0;
+  mix-blend-mode: screen;
+  animation: glint 7s ease-in-out 1.2s infinite;
+}
+@keyframes glint { 0%, 70% { background-position: 120% 0; } 85%, 100% { background-position: -30% 0; } }
+@keyframes coinin { from { opacity: 0; transform: translateY(1.2rem) scale(0.9) rotate(-8deg); } }
+.coin-tag {
+  position: absolute; left: 50%; bottom: -1.9rem; transform: translateX(-50%);
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); white-space: nowrap;
+  opacity: 0; transition: opacity 0.2s ease;
+}
+.coin.front .coin-tag, .coin.up .coin-tag { opacity: 1; }
+.coin.front .coin-tag { color: var(--accent-deep); }
+
+@media (max-width: 52rem) {
+  .hero-grid { grid-template-columns: 1fr; gap: 0; }
+  .coins { --size: clamp(8.5rem, 38vw, 11rem); order: -1; justify-self: start; margin: 0 0 2.6rem 0.2rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coin, .coin.front::after { animation: none; }
+  .coins-tilt { transition: none; }
+}
+.hero-grid .hero-title { font-size: clamp(2.5rem, 6vw, 4.3rem); }
+
+/* hovered coin swaps to the front, the current season steps back */
+.coin.up {
+  z-index: 20; filter: none;
+  transform: translate(calc(var(--i) * var(--size) * -0.4), calc(var(--i) * var(--size) * -0.16 - 0.4rem)) scale(1) rotate(0deg);
+}
+.coin.up .coin-tag { color: var(--accent-deep); }
+.coins.swapped .coin.front {
+  filter: saturate(0.8) brightness(0.93);
+  transform: translate(0.9rem, 0.5rem) scale(0.86) rotate(8deg);
+}
+.coins.swapped .coin.front .coin-tag { opacity: 0; }
+.coins.swapped .coin.front::after { animation: none; opacity: 0; }

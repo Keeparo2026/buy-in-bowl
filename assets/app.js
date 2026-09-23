@@ -187,14 +187,13 @@
     var ys = years();
     var lp = L.landing || {};
 
-    var h = '<section class="hero"><div class="wrap">';
-    var cur = ys[0];
-    if (S[cur] && has(S[cur].logo)) h += '<div class="hero-logo">' + seasonLogo(cur, "") + "</div>";
+    var h = '<section class="hero"><div class="wrap"><div class="hero-grid"><div class="hero-txt">';
     h += statusChip();
     h += '<h1 class="hero-title">' + esc(has(lp.headline) ? lp.headline : (L.claim || "")) + "</h1>";
     h += '<p class="plaque-sub">' + esc(has(lp.intro) ? lp.intro :
       "Every win, every collapse, every ring \u2014 kept somewhere the group chat can't lose it.") + "</p>";
     if (has(lp.highlights)) h += bullets(lp.highlights);
+    h += "</div>" + coinStack() + "</div>";
 
     var titled = ys.filter(function (y) { return S[y].champion && has(S[y].champion.team); }).length;
     var stats = [
@@ -216,9 +215,68 @@
     }
 
     h += topThree();
+    h += ifSeasonEnded();
     h += lineup();
     h += '<div class="wordwall" aria-hidden="true"><span>BUY-IN BOWL</span></div>';
     return h;
+  }
+
+  /* One coin per season: the newest in front, older seasons stacked behind it */
+  function coinStack() {
+    var ys = years().filter(function (y) { return S[y] && has(S[y].logo); });
+    if (!ys.length) return "";
+    var n = ys.length;
+    var h = '<div class="coins" style="--n:' + n + '"><div class="coins-tilt">';
+    ys.slice().reverse().forEach(function (y, k) {
+      var i = n - 1 - k, ed = edition(y);
+      h += '<button type="button" class="coin' + (i === 0 ? " front" : "") + '" style="--i:' + i + '" ' +
+        'data-route="table" data-tab="' + y + '" aria-label="Open season ' + y + '">' +
+        '<img src="' + esc(S[y].logo) + '" alt="">' +
+        '<span class="coin-tag">' + y + (ed ? " &middot; " + ed : "") + "</span></button>";
+    });
+    h += "</div></div>";
+    return h;
+  }
+
+  /* The stack leans a little toward the pointer */
+  function wireCoins() {
+    var st = root.querySelector(".coins");
+    if (!st) return;
+    /* hovering a coin brings it to the front; the current season is in front by default */
+    [].slice.call(st.querySelectorAll(".coin")).forEach(function (c) {
+      c.addEventListener("pointerenter", function (e) {
+        if (e.pointerType === "touch") return;
+        st.querySelectorAll(".coin.up").forEach(function (x) { x.classList.remove("up"); });
+        if (!c.classList.contains("front")) { c.classList.add("up"); st.classList.add("swapped"); }
+        else st.classList.remove("swapped");
+      });
+      c.addEventListener("focus", function () {
+        st.querySelectorAll(".coin.up").forEach(function (x) { x.classList.remove("up"); });
+        if (!c.classList.contains("front")) { c.classList.add("up"); st.classList.add("swapped"); }
+      });
+    });
+    st.addEventListener("pointerleave", function () {
+      st.querySelectorAll(".coin.up").forEach(function (x) { x.classList.remove("up"); });
+      st.classList.remove("swapped");
+    });
+    st.addEventListener("focusout", function (e) {
+      if (st.contains(e.relatedTarget)) return;
+      st.querySelectorAll(".coin.up").forEach(function (x) { x.classList.remove("up"); });
+      st.classList.remove("swapped");
+    });
+    if (REDUCE) return;
+    var hero = root.querySelector(".hero") || st;
+    hero.addEventListener("pointermove", function (e) {
+      if (e.pointerType === "touch") return;
+      var b = st.getBoundingClientRect();
+      var x = (e.clientX - (b.left + b.width / 2)) / window.innerWidth;
+      var y = (e.clientY - (b.top + b.height / 2)) / window.innerHeight;
+      st.style.setProperty("--ry", (x * 16).toFixed(2) + "deg");
+      st.style.setProperty("--rx", (-y * 12).toFixed(2) + "deg");
+    });
+    hero.addEventListener("pointerleave", function () {
+      st.style.setProperty("--ry", "0deg"); st.style.setProperty("--rx", "0deg");
+    });
   }
 
   /* Stadium ribbon board: every team name the league has ever had */
@@ -1228,6 +1286,63 @@
   function ordinal(n) {
     var s = ["th", "st", "nd", "rd"], v = n % 100;
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  /* ---------- Home: if the season ended today ---------- */
+  function ifSeasonEnded() {
+    var y = years()[0], s = S[y] || {};
+    if (isDone(y)) return "";
+    var st = (s.standings || []).slice().sort(function (a, b) { return a.rank - b.rank; });
+    var spots = ((L.format || {}).playoffTeams) || 6;
+    if (st.length < spots) return "";
+    var wk = weeksPlayed(y);
+    if (!wk) return "";
+    var pw = (s.playoffs || {}).weeks || {};
+    var seed = st.slice(0, spots);
+    var odds = scoreWeeks(y).length ? playoffOdds(y) : null;
+    var oddsOf = {};
+    if (odds) odds.rows.forEach(function (r) { oddsOf[r.id] = r.po; });
+
+    function team(r, n, bye) {
+      var m = mgr(r.manager);
+      return '<div class="ie-row" data-profile="' + esc(r.manager) + '"><span class="ie-seed">' + n + "</span>" +
+        (has(m.face) ? '<img src="' + esc(m.face) + '" alt="">' : "") +
+        '<span class="ie-nm"><b>' + esc(m.name || r.team) + "</b><small>" + esc(r.team) + "</small></span>" +
+        (bye ? '<span class="ie-bye">Bye</span>' : "") +
+        '<span class="ie-rec">' + r.w + "-" + r.l + (r.t ? "-" + r.t : "") + "</span></div>";
+    }
+    function tbd(txt) { return '<div class="ie-row tbd"><span class="ie-seed"></span><span class="ie-nm"><b>' + txt + "</b></span></div>"; }
+    function game(a, b) { return '<div class="ie-game">' + a + b + "</div>"; }
+
+    var h = '<div class="wrap"><section class="block ie">';
+    h += '<h2 class="sec">If the season ended today</h2>';
+    h += '<p class="ie-sub">Seeds after week ' + wk + ". Top " + spots + " make the playoffs, the top two sit out the first round.</p>";
+    h += '<div class="ie-cols">';
+
+    h += '<div class="ie-col"><div class="ie-head"><b>Quarterfinals</b><span>Week ' + (pw.Quarterfinals || 15) + "</span></div>";
+    h += game(team(seed[2], 3), team(seed[5], 6)) + game(team(seed[3], 4), team(seed[4], 5));
+    h += "</div>";
+
+    h += '<div class="ie-col"><div class="ie-head"><b>Semifinals</b><span>Week ' + (pw.Semifinals || 16) + "</span></div>";
+    h += game(team(seed[0], 1, true), tbd("Winner 4 vs 5")) + game(team(seed[1], 2, true), tbd("Winner 3 vs 6"));
+    h += '<div class="ie-head ie-fin"><b>Final</b><span>Week ' + (pw.Final || 17) + "</span></div>";
+    h += '<div class="ie-game final">' + tbd("Two semifinal winners") + "</div></div>";
+
+    /* The first teams on the outside */
+    var out = st.slice(spots, spots + 2), last = seed[spots - 1];
+    if (out.length) {
+      h += '<div class="ie-col ie-out"><div class="ie-head"><b>On the outside</b><span>Chasing seed ' + spots + "</span></div>";
+      out.forEach(function (r, i) {
+        var gap = (last.w - r.w);
+        var note = gap > 0 ? gap + (gap === 1 ? " win" : " wins") + " behind " + esc(mgr(last.manager).name || last.team)
+          : "Level on wins, " + num(Math.max(0, last.pf - r.pf), 2) + " points behind";
+        h += '<div class="ie-game out">' + team(r, spots + 1 + i) + '<div class="ie-note">' + note +
+          (oddsOf[r.manager] != null ? " &middot; playoff odds " + pct(oddsOf[r.manager]) : "") + "</div></div>";
+      });
+      h += "</div>";
+    }
+    h += "</div></section></div>";
+    return h;
   }
 
   /* ---------- Wall of Shame ---------- */
@@ -2349,6 +2464,7 @@
       ".stat, .showcase, .podium, .pod, .table-scroll, .tabs, .page-head, .hero-title, " +
       ".plaque-sub, .eyebrow, .bullets li, .hero-img, .hint, .ticker, .bracket-block, .bracket-winner, .crew-card, .medalcard"
     ));
+    wireCoins();
     if (REDUCE) {
       items.forEach(function (el) { el.classList.add("in"); });
       wireBrackets();
