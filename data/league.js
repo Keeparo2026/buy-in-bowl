@@ -5,6 +5,7 @@
 
 window.LEAGUE = {
   name: "The Buy-In Bowl",
+  siteUrl: "https://keeparo2026.github.io/buy-in-bowl/",  // live address, used for share links
   claim: "Ten managers. Three continents. $2,500 on the table.",
   platform: "Yahoo Fantasy Football",
   founded: 2025,
