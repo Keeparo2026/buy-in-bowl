@@ -1232,7 +1232,7 @@ html.sheet-lock, html.sheet-lock body { overflow: hidden; }
 
 /* luck */
 .st-luck { display: grid; gap: 0.35rem; }
-.st-luck-row { display: grid; grid-template-columns: 6.6rem 1fr 2.6rem 5.6rem; align-items: center; gap: 0.5rem; }
+.st-luck-row { display: grid; grid-template-columns: 6.6rem minmax(0, 1fr) 2.6rem max-content; align-items: center; gap: 0.5rem; }
 .st-luck-track { position: relative; height: 1.1rem; }
 .st-luck-mid { position: absolute; left: 50%; top: -0.2rem; bottom: -0.2rem; width: 1px; background: #C4C7CC; }
 .st-luck-bar { position: absolute; top: 0.15rem; bottom: 0.15rem; border-radius: 4px; }
