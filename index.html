@@ -34,5 +34,12 @@
 <script src="data/season-2025.js"></script>
 <script src="data/season-2026.js"></script>
 <script src="assets/app.js"></script>
+<script data-intern-nav>
+(function(){var n=document.getElementById('nav');if(!n)return;
+function add(){if(n.querySelector('[data-intern]'))return;var b=document.createElement('button');
+b.type='button';b.setAttribute('data-intern','');b.textContent='Intern';
+b.onclick=function(){location.href='intern/';};n.appendChild(b);}
+add();new MutationObserver(add).observe(n,{childList:true});})();
+</script>
 </body>
 </html>
