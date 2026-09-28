@@ -34,11 +34,12 @@
 <script src="data/season-2025.js"></script>
 <script src="data/season-2026.js"></script>
 <script src="assets/app.js"></script>
-<script data-intern-nav>
+<script data-intern-nav data-v="2">
 (function(){var n=document.getElementById('nav');if(!n)return;
-function add(){if(n.querySelector('[data-intern]'))return;var b=document.createElement('button');
-b.type='button';b.setAttribute('data-intern','');b.textContent='Intern';
-b.onclick=function(){location.href='intern/';};n.appendChild(b);}
+function mk(attr,label,href){var b=document.createElement('button');b.type='button';b.setAttribute(attr,'');
+b.textContent=label;b.onclick=function(){location.href=href;};return b;}
+function add(){if(!n.querySelector('[data-players]'))n.appendChild(mk('data-players','Players','players/'));
+if(!n.querySelector('[data-intern]'))n.appendChild(mk('data-intern','Intern','intern/'));}
 add();new MutationObserver(add).observe(n,{childList:true});})();
 </script>
 </body>
