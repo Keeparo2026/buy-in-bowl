@@ -1440,3 +1440,16 @@ html.sheet-lock, html.sheet-lock body { overflow: hidden; }
 }
 .coins.swapped .coin.front .coin-tag { opacity: 0; }
 .coins.swapped .coin.front::after { animation: none; opacity: 0; }
+
+/* === Umkleide-Hintergrund (dezent) === */
+body, main, footer.site { background: transparent; }
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background: url("../media/locker-bg.jpg") center bottom / 100% auto no-repeat;
+  opacity: .10; filter: saturate(.5) blur(2px);
+  -webkit-mask-image: linear-gradient(to top, #000 45%, transparent 85%);
+          mask-image: linear-gradient(to top, #000 45%, transparent 85%);
+}
+@media (max-width: 900px) {
+  body::after { background-size: auto 48vh; opacity: .09; }
+}
