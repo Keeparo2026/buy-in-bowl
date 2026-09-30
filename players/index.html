@@ -63,6 +63,15 @@ h2::after{content:"";flex:1;height:1px;background:var(--line)}
 .wk{font:600 .78rem var(--body);color:var(--accent)}
 footer{max-width:64rem;margin:0 auto;padding:0 1.1rem 3rem;color:var(--muted);font-size:.8rem}
 @media(max-width:560px){.lb li{grid-template-columns:1.6rem 2.2rem minmax(0,1fr) 4.4rem}.lb .spark{display:none}.av{width:2.2rem;height:2.2rem}}
+
+/* Umkleide-Hintergrund (dezent) */
+html{background:#F7F6F3}
+body{background:transparent}
+body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:url("../media/locker-bg.jpg") center bottom / 100% auto no-repeat;
+  opacity:.10;filter:saturate(.5) blur(2px);
+  -webkit-mask-image:linear-gradient(to top,#000 45%,transparent 85%);mask-image:linear-gradient(to top,#000 45%,transparent 85%)}
+@media(max-width:900px){body::after{background-size:auto 48vh;opacity:.09}}
 </style>
 </head>
 <body>
