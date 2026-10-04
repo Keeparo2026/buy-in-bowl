@@ -216,7 +216,6 @@
 
     h += topThree();
     h += powerRanking();
-    h += ifSeasonEnded();
     h += lineup();
     h += '<div class="wordwall" aria-hidden="true"><span>BUY-IN BOWL</span></div>';
     return h;
