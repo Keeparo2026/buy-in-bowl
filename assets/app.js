@@ -1552,7 +1552,7 @@
     if (blow) h += recCard("Biggest blowout", blow.v, blow.id, blow.when, blow.d);
     if (clos) h += recCard("Closest game", clos.v, clos.id, clos.when, clos.d);
     h += "</div>";
-    h += '<p class="hint">Weekly scores are on file from 2026 on. Blowout and closest game include Yahoo\'s record book for 2025.</p></section>';
+    h += '<p class="hint">Weekly scores are on file for every season. Streaks, moves and schedule strength for 2025 come from Yahoo\'s record book.</p></section>';
 
     /* --- season (completed seasons only) --- */
     var done = years().filter(isDone);
@@ -2202,7 +2202,7 @@
     var po = s.playoffs, tree = bracketTree(po);
     if (!tree) return "";
 
-    var W = 150, G = 34, ROW = 32, HEAD = 44, U = 84, CW = 156;
+    var W = 196, G = 30, ROW = 32, HEAD = 44, U = 84, CW = 156;
     var leaves = 0, nodes = [];
     (function place(n) {
       n.kids.forEach(place);
@@ -2226,9 +2226,15 @@
       var src = m.face || m.avatar;
       return has(src) ? '<img class="br-av" src="' + esc(src) + '" alt="">' : '<span class="br-av br-av-x"></span>';
     }
+    function brScore(n, team) {
+      var g = n.g; if (!g) return "";
+      var v = team === g.home ? g.homeScore : g.awayScore;
+      if (v === null || v === undefined) return "";
+      return '<b class="br-sc" style="margin-left:auto;padding-left:6px;font-variant-numeric:tabular-nums;font-size:.8em;font-weight:600;white-space:nowrap">' + Number(v).toFixed(2) + "</b>";
+    }
     function row(n, team, res) {
       return '<div class="br-row ' + (res || "") + '" data-team="' + esc(team) + '">' + av(team) +
-        '<span class="br-nm">' + esc(team) + "</span>" + (n.type === "bye" ? "<em>Bye</em>" : "") + "</div>";
+        '<span class="br-nm">' + esc(team) + "</span>" + (n.type === "bye" ? "<em>Bye</em>" : brScore(n, team)) + "</div>";
     }
 
     /* lines */
