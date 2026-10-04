@@ -58,6 +58,25 @@ window.SEASONS[2025] = {
     }
   },
 
+  // Tabellenplatz nach jeder Woche (W1–14 reguläre Saison, W17 = Endplatzierung)
+  rankHistory: [
+    { week: 1, order: ["Twerk", "Handegg United", "Gin&Jukes", "Cee Dees TeeDees", "HutMessXpress", "TUSH PUSH", "Touchdown Domination", "David hat grosse manschaft", "Gamble Play Jason", "Take Me To Dinner First"] },
+    { week: 2, order: ["Twerk", "Handegg United", "HutMessXpress", "David hat grosse manschaft", "Gin&Jukes", "Cee Dees TeeDees", "Touchdown Domination", "TUSH PUSH", "Take Me To Dinner First", "Gamble Play Jason"] },
+    { week: 3, order: ["HutMessXpress", "Handegg United", "David hat grosse manschaft", "Twerk", "Touchdown Domination", "Cee Dees TeeDees", "TUSH PUSH", "Gin&Jukes", "Take Me To Dinner First", "Gamble Play Jason"] },
+    { week: 4, order: ["Twerk", "David hat grosse manschaft", "HutMessXpress", "Handegg United", "Cee Dees TeeDees", "TUSH PUSH", "Touchdown Domination", "Gin&Jukes", "Take Me To Dinner First", "Gamble Play Jason"] },
+    { week: 5, order: ["David hat grosse manschaft", "Handegg United", "Twerk", "HutMessXpress", "TUSH PUSH", "Touchdown Domination", "Cee Dees TeeDees", "Gin&Jukes", "Take Me To Dinner First", "Gamble Play Jason"] },
+    { week: 6, order: ["Touchdown Domination", "TUSH PUSH", "HutMessXpress", "David hat grosse manschaft", "Handegg United", "Twerk", "Cee Dees TeeDees", "Take Me To Dinner First", "Gin&Jukes", "Gamble Play Jason"] },
+    { week: 7, order: ["HutMessXpress", "Handegg United", "Twerk", "Touchdown Domination", "TUSH PUSH", "David hat grosse manschaft", "Cee Dees TeeDees", "Gin&Jukes", "Take Me To Dinner First", "Gamble Play Jason"] },
+    { week: 8, order: ["Handegg United", "Touchdown Domination", "HutMessXpress", "Cee Dees TeeDees", "Twerk", "TUSH PUSH", "David hat grosse manschaft", "Take Me To Dinner First", "Gin&Jukes", "Gamble Play Jason"] },
+    { week: 9, order: ["Cee Dees TeeDees", "Handegg United", "TUSH PUSH", "Touchdown Domination", "David hat grosse manschaft", "HutMessXpress", "Twerk", "Take Me To Dinner First", "Gin&Jukes", "Gamble Play Jason"] },
+    { week: 10, order: ["Cee Dees TeeDees", "Handegg United", "Touchdown Domination", "HutMessXpress", "David hat grosse manschaft", "TUSH PUSH", "Gin&Jukes", "Twerk", "Take Me To Dinner First", "Gamble Play Jason"] },
+    { week: 11, order: ["Handegg United", "Touchdown Domination", "Cee Dees TeeDees", "David hat grosse manschaft", "HutMessXpress", "Gin&Jukes", "Twerk", "TUSH PUSH", "Take Me To Dinner First", "Gamble Play Jason"] },
+    { week: 12, order: ["Cee Dees TeeDees", "Handegg United", "Touchdown Domination", "David hat grosse manschaft", "Gin&Jukes", "Twerk", "HutMessXpress", "TUSH PUSH", "Take Me To Dinner First", "Gamble Play Jason"] },
+    { week: 13, order: ["Cee Dees TeeDees", "Handegg United", "Gin&Jukes", "Touchdown Domination", "David hat grosse manschaft", "Twerk", "HutMessXpress", "TUSH PUSH", "Take Me To Dinner First", "Gamble Play Jason"] },
+    { week: 14, order: ["Cee Dees TeeDees", "Handegg United", "Gin&Jukes", "Twerk", "Touchdown Domination", "HutMessXpress", "David hat grosse manschaft", "TUSH PUSH", "Take Me To Dinner First", "Gamble Play Jason"] },
+    { week: 17, order: ["Handegg United", "HutMessXpress", "Twerk", "Cee Dees TeeDees", "Gin&Jukes", "Touchdown Domination", "Take Me To Dinner First", "Gamble Play Jason", "David hat grosse manschaft", "TUSH PUSH"] }
+  ],
+
   standings: [
     { rank: 1, team: "Handegg United", manager: "johannes", w: 10, l: 4, t: 0, pf: 1508.32 },
     { rank: 2, team: "HutMessXpress", manager: "hutmess", w: 7, l: 7, t: 0, pf: 1573.16 },
