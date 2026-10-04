@@ -2288,11 +2288,43 @@
     return { root: build(fin, R - 1), order: order, R: R };
   }
 
+  /* Turnierbaum der laufenden Saison: aktuelle Top 6 ("if the season ended today") */
+  function projectedPlayoffs(y) {
+    var s = S[y]; if (!s) return null;
+    var st = (s.standings || []).slice().sort(function (a, b) { return a.rank - b.rank; });
+    if (st.length < 6) return null;
+    var t = st.map(function (r) { return r.team; });
+    var base = s.playoffs || {};
+    var q1 = "Winner 4 vs 5", q2 = "Winner 3 vs 6";
+    var f1 = "Winner semifinal 1", f2 = "Winner semifinal 2";
+    return {
+      order: base.order || ["Quarterfinals", "Semifinals", "Final"],
+      weeks: base.weeks || { Quarterfinals: 15, Semifinals: 16, Final: 17 },
+      thirdPlaceRound: base.thirdPlaceRound || "Third place",
+      byes: { Quarterfinals: [t[0], t[1]] },
+      projected: true,
+      seeds: (function () { var o = {}; t.slice(0, 6).forEach(function (n, i) { o[n] = i + 1; }); return o; })(),
+      games: [
+        { round: "Quarterfinals", home: t[3], away: t[4], homeScore: null, awayScore: null, winner: q1, projected: true },
+        { round: "Quarterfinals", home: t[2], away: t[5], homeScore: null, awayScore: null, winner: q2, projected: true },
+        { round: "Semifinals", home: t[0], away: q1, homeScore: null, awayScore: null, winner: f1, projected: true },
+        { round: "Semifinals", home: t[1], away: q2, homeScore: null, awayScore: null, winner: f2, projected: true },
+        { round: "Final", home: f1, away: f2, homeScore: null, awayScore: null, winner: null, projected: true }
+      ]
+    };
+  }
+
   function brackets() {
     if (mTab === "all") return "";
     var y = +mTab, s = S[y];
-    if (!s || !has((s.playoffs || {}).games)) return "";
-    var po = s.playoffs, tree = bracketTree(po);
+    if (!s) return "";
+    var po = s.playoffs || {};
+    if (!has(po.games)) {
+      if (isDone(y)) return "";
+      po = projectedPlayoffs(y);
+      if (!po) return "";
+    }
+    var tree = bracketTree(po);
     if (!tree) return "";
 
     var W = 196, G = 30, ROW = 32, HEAD = 44, U = 84, CW = 156;
@@ -2307,7 +2339,7 @@
     var H = HEAD + U * leaves + 8;
     var champX = tree.R * (W + G);
     var TW = champX + CW;
-    var champ = winnerOf(tree.root.g);
+    var champ = po.projected ? null : winnerOf(tree.root.g);
     var weeks = po.weeks || {};
 
     function rowY(n, team) {
@@ -2326,6 +2358,14 @@
       return '<b class="br-sc" style="margin-left:auto;padding-left:6px;font-variant-numeric:tabular-nums;font-size:.8em;font-weight:600;white-space:nowrap">' + Number(v).toFixed(2) + "</b>";
     }
     function row(n, team, res) {
+      var sd = po.projected && po.seeds && po.seeds[team] ? '<b class="br-seed" style="color:#8A9099;font-weight:600;font-size:.8em;min-width:12px">' + po.seeds[team] + "</b>" : "";
+      if (sd) {
+        return '<div class="br-row ' + (res || "") + '" data-team="' + esc(team) + '">' + sd + av(team) +
+          '<span class="br-nm">' + esc(team) + "</span>" + (n.type === "bye" ? "<em>Bye</em>" : "") + "</div>";
+      }
+      if (/^Winner /.test(team)) {
+        return '<div class="br-row tbd"><span class="br-av br-av-x"></span><span class="br-nm" style="color:#8A9099;font-style:italic;font-weight:400">' + esc(team) + "</span></div>";
+      }
       return '<div class="br-row ' + (res || "") + '" data-team="' + esc(team) + '">' + av(team) +
         '<span class="br-nm">' + esc(team) + "</span>" + (n.type === "bye" ? "<em>Bye</em>" : brScore(n, team)) + "</div>";
     }
@@ -2364,8 +2404,8 @@
       }
       var w = winnerOf(n.g);
       slots += '<div class="br-slot" data-r="' + n.r + '" style="left:' + n.x + "px;top:" + (n.y - ROW) +
-        "px;width:" + W + 'px">' + row(n, n.g.home, w === n.g.home ? "w" : "l") +
-        row(n, n.g.away, w === n.g.away ? "w" : "l") + "</div>";
+        "px;width:" + W + 'px">' + row(n, n.g.home, n.g.projected ? "" : (w === n.g.home ? "w" : "l")) +
+        row(n, n.g.away, n.g.projected ? "" : (w === n.g.away ? "w" : "l")) + "</div>";
     });
 
     var champCard = "";
@@ -2386,7 +2426,10 @@
       '<button type="button" class="replay" data-replay>Replay</button></h2>';
     h += '<div class="br-card"><div class="br-scroll"><div class="br-canvas" style="width:' + TW + "px;height:" + H + 'px">' +
       lines + heads + slots + champCard + "</div></div></div>";
-    h += '<p class="hint">Tap a team to follow its run. The bronze line is the champion\'s path.</p>';
+    h += po.projected
+      ? '<p class="hint">If the season ended today: the current top six after week ' + (weeksPlayed(y) || 0) +
+        '. Seeds 1 and 2 get a bye, 3 plays 6, 4 plays 5. Updates every week until the real playoffs start.</p>'
+      : '<p class="hint">Tap a team to follow its run. The bronze line is the champion\'s path.</p>';
     return h + "</section>";
   }
 
