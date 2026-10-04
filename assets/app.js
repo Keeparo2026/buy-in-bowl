@@ -215,6 +215,7 @@
     }
 
     h += topThree();
+    h += powerRanking();
     h += ifSeasonEnded();
     h += lineup();
     h += '<div class="wordwall" aria-hidden="true"><span>BUY-IN BOWL</span></div>';
@@ -606,6 +607,98 @@
   }
 
   /* Home: the top three of the current season, straight from the standings */
+  /* ---------- Power ranking (Startseite) ----------
+     50 % Bilanz gegen alle (jede Woche gegen alle neun anderen gewertet),
+     30 % Form (Schnitt der letzten zwei Wochen), 20 % echte Bilanz. */
+  function powerRows(y, uptoWeek) {
+    var s = S[y]; if (!s || !has(s.weeks)) return [];
+    var wks = s.weeks.filter(function (w) {
+      return w.week <= uptoWeek && (w.matchups || []).length &&
+        w.matchups.every(function (m) { return m.homeScore !== null && m.homeScore !== undefined && m.awayScore !== null && m.awayScore !== undefined; });
+    });
+    if (!wks.length) return [];
+    var T = {};
+    wks.forEach(function (w) {
+      var all = [];
+      w.matchups.forEach(function (m) {
+        all.push([m.home, +m.homeScore]); all.push([m.away, +m.awayScore]);
+        var hw = +m.homeScore > +m.awayScore;
+        [[m.home, hw], [m.away, !hw]].forEach(function (x) {
+          var t = T[x[0]] = T[x[0]] || { team: x[0], sc: [], w: 0, l: 0, apw: 0, apl: 0 };
+          if (x[1]) t.w++; else t.l++;
+        });
+      });
+      all.forEach(function (a) {
+        var t = T[a[0]];
+        t.sc.push(a[1]);
+        all.forEach(function (b) { if (b[0] !== a[0]) { if (a[1] > b[1]) t.apw++; else if (a[1] < b[1]) t.apl++; } });
+      });
+    });
+    var teams = Object.keys(T).map(function (k) { return T[k]; });
+    var allSc = [].concat.apply([], teams.map(function (t) { return t.sc; }));
+    var lg = allSc.reduce(function (a, b) { return a + b; }, 0) / allSc.length;
+    teams.forEach(function (t) {
+      var g = t.sc.length, last = t.sc.slice(-2);
+      t.l2 = last.reduce(function (a, b) { return a + b; }, 0) / last.length;
+      t.apPct = (t.apw + t.apl) ? t.apw / (t.apw + t.apl) : 0.5;
+      t.wPct = g ? t.w / g : 0;
+      var form = Math.max(0, Math.min(1, 0.5 + (t.l2 - lg) / 60));
+      t.score = 100 * (0.5 * t.apPct + 0.3 * form + 0.2 * t.wPct);
+      t.lg = lg; t.games = g;
+    });
+    teams.sort(function (a, b) { return b.score - a.score || b.apPct - a.apPct; });
+    teams.forEach(function (t, i) { t.rank = i + 1; });
+    return teams;
+  }
+  function powerNote(t, best) {
+    var ap = t.apw + "-" + t.apl, diff = t.apPct - t.wPct;
+    if (t.games >= 3 && t.l === 0) return "Unbeaten and rolling";
+    if (t.games >= 3 && t.w === 0) return "Still looking for win number one";
+    if (t === best) return "Strongest on paper: " + ap + " against everyone";
+    if (diff >= 0.25) return "Unlucky: " + ap + " against everyone";
+    if (diff <= -0.25) return "Lucky so far: " + ap + " against everyone";
+    if (t.l2 >= t.lg + 12) return "Hot: " + num(t.l2, 1) + " per week lately";
+    if (t.l2 <= t.lg - 12) return "Cold: " + num(t.l2, 1) + " per week lately";
+    return "Holding steady";
+  }
+  function powerRanking() {
+    var y = years()[0], s = S[y];
+    if (!s || !has(s.weeks)) return "";
+    var done = s.weeks.filter(function (w) { return (w.matchups || []).length; }).map(function (w) { return w.week; });
+    if (!done.length) return "";
+    var wk = Math.max.apply(null, done);
+    var now = powerRows(y, wk); if (!now.length) return "";
+    var prev = {}; powerRows(y, wk - 1).forEach(function (t) { prev[t.team] = t.rank; });
+    var best = now.slice().sort(function (a, b) { return b.apPct - a.apPct; })[0];
+    var h = '<div class="wrap"><section class="block power">';
+    h += '<h2 class="sec">Power ranking</h2>';
+    h += '<div class="table-scroll"><table class="champs-table power-table"><thead><tr>' +
+      "<th>#</th><th>Manager</th><th>Power</th><th>W-L</th><th>vs. all</th><th></th></tr></thead><tbody>";
+    now.forEach(function (t) {
+      var id = teamManager(y, t.team), m = mgr(id || "");
+      var p = prev[t.team], mv = p ? p - t.rank : 0;
+      var arrow = !p ? "" : mv > 0 ? '<span class="pw-up" style="color:#2F7A4E;font-size:.75em;margin-left:6px">&#9650;' + mv + "</span>"
+        : mv < 0 ? '<span class="pw-dn" style="color:#B04A3A;font-size:.75em;margin-left:6px">&#9660;' + (-mv) + "</span>"
+        : '<span style="color:#8A9099;font-size:.75em;margin-left:6px">&ndash;</span>';
+      h += '<tr' + (id ? ' data-profile="' + esc(id) + '" tabindex="0"' : "") + ">" +
+        '<td class="t3-rank">' + t.rank + arrow + "</td>" +
+        '<td><div class="cwho">' +
+          (has(m.face || m.avatar) ? '<img class="avatar" src="' + esc(m.face || m.avatar) + '" alt="">' : "") +
+          '<span class="mtxt"><span class="mname">' + esc(m.name || t.team) + (id ? flagFor(id) : "") + "</span>" +
+          '<span class="mteam" style="white-space:normal">' + esc(powerNote(t, best)) + "</span></span></div></td>" +
+        '<td class="t3-num"><b>' + Math.round(t.score) + "</b></td>" +
+        '<td class="t3-num">' + t.w + "-" + t.l + "</td>" +
+        '<td class="t3-num">' + t.apw + "-" + t.apl + "</td><td></td></tr>";
+    });
+    h += "</tbody></table></div>";
+    h += '<p class="pw-note" style="margin:.8rem 0 0;font-size:.82rem;line-height:1.5;color:#8A9099">How it&rsquo;s ranked: 50% record against everyone ' +
+      "(each week, every team is scored against all nine others), 30% form (average of the last two weeks), " +
+      "20% actual record. Arrows show the move since last week.</p>";
+    h += '<div class="t3-foot"><span>After week ' + wk + " &middot; Buy-In Bowl " + (edition(y) || y) + "</span></div>";
+    h += "</section></div>";
+    return h;
+  }
+
   function topThree() {
     var y = years()[0], s = S[y];
     if (!s) return "";
