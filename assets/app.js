@@ -281,27 +281,54 @@
 
   /* Stadium ribbon board: every team name the league has ever had */
   function ticker() {
-    /* Only the teams playing the current season */
-    var current = years()[0];
-    var names = [];
+    /* Live-Ticker: Teams mit Bilanz/Platz, Ergebnisse der letzten Woche, nächster Spieltag */
+    var current = years()[0], s = S[current] || {};
+    var mgrOf = {}, names = [];
     (L.managers || []).forEach(function (m) {
       var team = (m.teams || {})[current];
-      if (team && names.indexOf(team) === -1) names.push(team);
+      if (team && names.indexOf(team) === -1) { names.push(team); mgrOf[team] = m.id; }
     });
     if (!names.length) return "";
     var hon = honors();
-    var byTeam = {};
-    (L.managers || []).forEach(function (m) {
-      var team = (m.teams || {})[current];
-      if (team) byTeam[team] = hon[m.id] || { t: 0, m: 0 };
-    });
-    var run = names.map(function (n) {
-      var hn = byTeam[n] || { t: 0, m: 0 };
+    var st = {}; (s.standings || []).forEach(function (r) { st[r.team] = r; });
+    if (has(s.standings)) names.sort(function (a, b) { return ((st[a] || {}).rank || 99) - ((st[b] || {}).rank || 99); });
+    var dim = 'style="font-family:var(--font);font-size:.72em;opacity:.8;margin-left:.45em"';
+    var lbl = function (t) { return '<span class="tk" style="color:var(--accent);opacity:.85;letter-spacing:.06em">' + esc(t) + "</span>"; };
+    var dot = '<i class="tkdot"></i>';
+    var items = [], n = 0;
+    names.forEach(function (t) {
+      var hn = hon[mgrOf[t]] || { t: 0, m: 0 }, r = st[t];
       var deco = (hn.t ? trophySvg() : "") + (hn.m ? medalSvg() : "");
-      return '<span class="tk' + (deco ? " won" : "") + '">' + esc(n) + deco +
-        '</span><i class="tkdot"></i>';
-    }).join("");
-    return '<div class="ticker" aria-hidden="true"><div class="ticker-track">' + run + run + "</div></div>";
+      var rec = r ? "<small " + dim + ">" + r.w + "-" + r.l + (r.t ? "-" + r.t : "") + " &middot; #" + r.rank + "</small>" : "";
+      items.push('<span class="tk' + (deco ? " won" : "") + '" data-profile="' + esc(mgrOf[t]) + '" style="cursor:pointer">' + esc(t) + deco + rec + "</span>");
+      n++;
+    });
+    var played = (s.weeks || []).filter(function (w) {
+      return has(w.matchups) && w.matchups.every(function (m) { return m.homeScore !== null && m.homeScore !== undefined; });
+    });
+    var last = played[played.length - 1];
+    if (last) {
+      items.push(lbl("Week " + last.week + " final"));
+      last.matchups.forEach(function (m) {
+        var hw = +m.homeScore > +m.awayScore;
+        var a = function (t, sc, win) {
+          return '<span style="' + (win ? "color:rgba(22,24,28,.62)" : "") + '">' + esc(t) + " " + num(sc, 2) + "</span>";
+        };
+        items.push('<span class="tk">' + a(m.home, m.homeScore, hw) + ' <span style="opacity:.6">&ndash;</span> ' + a(m.away, m.awayScore, !hw) + "</span>");
+        n += 1.6;
+      });
+    }
+    var up = s.upcoming;
+    if (up && has(up.matchups) && (!last || up.week > last.week)) {
+      items.push(lbl("Up next · Week " + up.week));
+      up.matchups.forEach(function (m) {
+        items.push('<span class="tk">' + esc(m.home) + ' <span style="opacity:.6;font-size:.8em">vs</span> ' + esc(m.away) + "</span>");
+        n += 1.3;
+      });
+    }
+    var run = items.join(dot) + dot;
+    var dur = Math.max(52, Math.round(n * 5.2));
+    return '<div class="ticker"><div class="ticker-track" style="animation-duration:' + dur + 's">' + run + run + "</div></div>";
   }
 
   function crewBadges(hn) {
