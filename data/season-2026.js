@@ -98,6 +98,15 @@ window.SEASONS[2026] = {
     games: []
   },
 
+  /* Next week's pairings, shown in the home ticker until the week is played */
+  upcoming: { week: 5, matchups: [
+    { home: "Handegg United", away: "Gin&Jukes" },
+    { home: "Cee Dees TeeDees", away: "Twerk" },
+    { home: "Luckyballzz7", away: "TUSH PUSH" },
+    { home: "HutMessXpress", away: "Julius's Juicemen" },
+    { home: "Take Me To Dinner First", away: "Rush Mode Isaac" }
+  ] },
+
   /* Week by week. One entry per week.
      Unknown scores stay null — the site shows them as open. */
   weeks: [
