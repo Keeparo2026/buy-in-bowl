@@ -70,20 +70,23 @@ window.SEASONS[2026] = {
       "Take Me To Dinner First", "Cee Dees TeeDees", "Gin&Jukes", "Julius's Juicemen", "Rush Mode Isaac"] },
     { week: 3, order: ["TUSH PUSH", "Take Me To Dinner First", "HutMessXpress", "Twerk", "Handegg United",
       "Gin&Jukes", "Luckyballzz7", "Rush Mode Isaac", "Cee Dees TeeDees", "Julius's Juicemen"] }
+,
+    { week: 4, order: ["Take Me To Dinner First", "TUSH PUSH", "Handegg United", "Luckyballzz7", "Twerk",
+      "Gin&Jukes", "Rush Mode Isaac", "HutMessXpress", "Cee Dees TeeDees", "Julius's Juicemen"] }
   ],
 
-  // Standings, currently after week 3
+  // Standings, currently after week 4
   standings: [
-    { rank: 1, team: "TUSH PUSH", manager: "tush", w: 3, l: 0, t: 0, pf: 361.80 },
-    { rank: 2, team: "Take Me To Dinner First", manager: "dinner", w: 2, l: 1, t: 0, pf: 361.76 },
-    { rank: 3, team: "HutMessXpress", manager: "hutmess", w: 2, l: 1, t: 0, pf: 361.24 },
-    { rank: 4, team: "Twerk", manager: "twerk", w: 2, l: 1, t: 0, pf: 355.34 },
-    { rank: 5, team: "Handegg United", manager: "johannes", w: 2, l: 1, t: 0, pf: 305.48 },
-    { rank: 6, team: "Gin&Jukes", manager: "gin", w: 1, l: 2, t: 0, pf: 365.60 },
-    { rank: 7, team: "Luckyballzz7", manager: "nathan", w: 1, l: 2, t: 0, pf: 344.32 },
-    { rank: 8, team: "Rush Mode Isaac", manager: "isaac", w: 1, l: 2, t: 0, pf: 306.76 },
-    { rank: 9, team: "Cee Dees TeeDees", manager: "ceedee", w: 1, l: 2, t: 0, pf: 292.08 },
-    { rank: 10, team: "Julius's Juicemen", manager: "julius", w: 0, l: 3, t: 0, pf: 262.70 }
+    { rank: 1, team: "Take Me To Dinner First", manager: "dinner", w: 3, l: 1, t: 0, pf: 474.08 },
+    { rank: 2, team: "TUSH PUSH", manager: "tush", w: 3, l: 1, t: 0, pf: 467.16 },
+    { rank: 3, team: "Handegg United", manager: "johannes", w: 3, l: 1, t: 0, pf: 425.46 },
+    { rank: 4, team: "Luckyballzz7", manager: "nathan", w: 2, l: 2, t: 0, pf: 491.64 },
+    { rank: 5, team: "Twerk", manager: "twerk", w: 2, l: 2, t: 0, pf: 482.76 },
+    { rank: 6, team: "Gin&Jukes", manager: "gin", w: 2, l: 2, t: 0, pf: 462.54 },
+    { rank: 7, team: "Rush Mode Isaac", manager: "isaac", w: 2, l: 2, t: 0, pf: 442.54 },
+    { rank: 8, team: "HutMessXpress", manager: "hutmess", w: 2, l: 2, t: 0, pf: 436.02 },
+    { rank: 9, team: "Cee Dees TeeDees", manager: "ceedee", w: 1, l: 3, t: 0, pf: 370.98 },
+    { rank: 10, team: "Julius's Juicemen", manager: "julius", w: 0, l: 4, t: 0, pf: 360.52 }
   ],
 
   playoffs: {
@@ -149,6 +152,25 @@ window.SEASONS[2026] = {
         "Biggest blowout: Rush Mode Isaac over Julius's Juicemen by 52.14",
         "Season high: Gin&Jukes 157.44",
         "Tush Push is the last unbeaten team (3-0); Julius's Juicemen still winless (0-3)"
+      ],
+      quotes: []
+    },
+    {
+      week: 4,
+      headline: "",
+      matchups: [
+        { home: "Handegg United", away: "HutMessXpress", homeScore: 119.98, awayScore: 74.78 },
+        { home: "Gin&Jukes", away: "Cee Dees TeeDees", homeScore: 96.94, awayScore: 78.90 },
+        { home: "Luckyballzz7", away: "Twerk", homeScore: 147.32, awayScore: 127.42 },
+        { home: "Take Me To Dinner First", away: "Julius's Juicemen", homeScore: 112.32, awayScore: 97.82 },
+        { home: "Rush Mode Isaac", away: "TUSH PUSH", homeScore: 135.78, awayScore: 105.36 }
+      ],
+      notes: [
+        "Winners: Handegg United, Gin&Jukes, LuckyBallzz7, Take Me To Dinner First, Rush Mode Isaac",
+        "Biggest blowout: Handegg United over HutMessXpress by 45.20",
+        "Top score: LuckyBallzz7 147.32",
+        "Closest game: Take Me To Dinner First over Julius's Juicemen by 14.50",
+        "Rush Mode Isaac hands Tush Push its first loss; no unbeaten teams left. Julius's Juicemen 0-4"
       ],
       quotes: []
     }
