@@ -281,7 +281,7 @@
 
   /* Stadium ribbon board: every team name the league has ever had */
   function ticker() {
-    /* Live-Ticker: Teams mit Bilanz/Platz, Ergebnisse der letzten Woche, nächster Spieltag */
+    /* Zwei Bänder: oben Teams (Trikot, Name, Platz), unten langsam gegenläufig Ergebnisse + nächster Spieltag */
     var current = years()[0], s = S[current] || {};
     var mgrOf = {}, names = [];
     (L.managers || []).forEach(function (m) {
@@ -292,43 +292,53 @@
     var hon = honors();
     var st = {}; (s.standings || []).forEach(function (r) { st[r.team] = r; });
     if (has(s.standings)) names.sort(function (a, b) { return ((st[a] || {}).rank || 99) - ((st[b] || {}).rank || 99); });
-    var dim = 'style="font-family:var(--font);font-size:.72em;opacity:.8;margin-left:.45em"';
-    var lbl = function (t) { return '<span class="tk" style="color:var(--accent);opacity:.85;letter-spacing:.06em">' + esc(t) + "</span>"; };
-    var dot = '<i class="tkdot"></i>';
-    var items = [], n = 0;
+    var css = '<style>' +
+      '.tkb{margin:3rem 0 3.25rem}' +
+      '.tkb .ticker{margin:0}' +
+      '.tkb .tk-top{border-bottom:0;padding:.7rem 0 .6rem}' +
+      '.tkb .tk-top .ticker-track{gap:1.5rem}' +
+      '.tkb .tk-top .tk{display:inline-flex;align-items:center;gap:.5rem;cursor:pointer}' +
+      '.tkb .tk-top .tk b{font-weight:400;color:var(--accent);font-size:.8em;opacity:.9}' +
+      '.tkb .tk-jer{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:none;mix-blend-mode:multiply;' +
+        'opacity:.62;filter:saturate(.85);transition:opacity .25s,transform .25s}' +
+      '.tkb .tk-top .tk:hover .tk-jer{opacity:1;transform:scale(1.08)}' +
+      '.tkb .tk-bot{border-top:1px dashed rgba(22,24,28,.12);padding:.5rem 0;background:rgba(247,246,243,.7)}' +
+      '.tkb .tk-bot .ticker-track{gap:2rem;animation-direction:reverse}' +
+      '.tkb .tk-bot .tk{font-family:var(--font);font-size:.8rem;color:#5b616b;font-variant-numeric:tabular-nums}' +
+      '.tkb .tk-bot .tk .w{color:var(--ink);font-weight:600}' +
+      '.tkb .tk-bot .mk{font-family:var(--font);font-size:.75rem;font-weight:600;color:var(--accent);white-space:nowrap}' +
+      '</style>';
+    var dot = '<i class="tkdot"></i>', top = [], bot = [], nb = 0;
     names.forEach(function (t) {
-      var hn = hon[mgrOf[t]] || { t: 0, m: 0 }, r = st[t];
+      var m = mgr(mgrOf[t]) || {}, hn = hon[mgrOf[t]] || { t: 0, m: 0 }, r = st[t];
       var deco = (hn.t ? trophySvg() : "") + (hn.m ? medalSvg() : "");
-      var rec = r ? "<small " + dim + ">" + r.w + "-" + r.l + (r.t ? "-" + r.t : "") + " &middot; #" + r.rank + "</small>" : "";
-      items.push('<span class="tk' + (deco ? " won" : "") + '" data-profile="' + esc(mgrOf[t]) + '" style="cursor:pointer">' + esc(t) + deco + rec + "</span>");
-      n++;
+      var jer = has(m.avatar) ? '<img class="tk-jer" src="' + esc(m.avatar) + '" alt="" loading="lazy">' : "";
+      top.push('<span class="tk' + (deco ? " won" : "") + '" data-profile="' + esc(mgrOf[t]) + '">' + jer + esc(t) + deco +
+        (r ? "<b>" + r.rank + "</b>" : "") + "</span>");
     });
     var played = (s.weeks || []).filter(function (w) {
       return has(w.matchups) && w.matchups.every(function (m) { return m.homeScore !== null && m.homeScore !== undefined; });
     });
     var last = played[played.length - 1];
     if (last) {
-      items.push(lbl("Week " + last.week + " final"));
+      bot.push('<span class="mk">Week ' + last.week + " final</span>");
       last.matchups.forEach(function (m) {
         var hw = +m.homeScore > +m.awayScore;
-        var a = function (t, sc, win) {
-          return '<span style="' + (win ? "color:rgba(22,24,28,.62)" : "") + '">' + esc(t) + " " + num(sc, 2) + "</span>";
-        };
-        items.push('<span class="tk">' + a(m.home, m.homeScore, hw) + ' <span style="opacity:.6">&ndash;</span> ' + a(m.away, m.awayScore, !hw) + "</span>");
-        n += 1.6;
+        var a = function (t, sc, win) { var x = esc(t) + " " + num(sc, 2); return win ? '<span class="w">' + x + "</span>" : x; };
+        bot.push('<span class="tk">' + a(m.home, m.homeScore, hw) + " &nbsp;&middot;&nbsp; " + a(m.away, m.awayScore, !hw) + "</span>");
+        nb++;
       });
     }
     var up = s.upcoming;
     if (up && has(up.matchups) && (!last || up.week > last.week)) {
-      items.push(lbl("Up next · Week " + up.week));
-      up.matchups.forEach(function (m) {
-        items.push('<span class="tk">' + esc(m.home) + ' <span style="opacity:.6;font-size:.8em">vs</span> ' + esc(m.away) + "</span>");
-        n += 1.3;
-      });
+      bot.push('<span class="mk">Week ' + up.week + "</span>");
+      up.matchups.forEach(function (m) { bot.push('<span class="tk">' + esc(m.home) + " &ndash; " + esc(m.away) + "</span>"); nb++; });
     }
-    var run = items.join(dot) + dot;
-    var dur = Math.max(52, Math.round(n * 5.2));
-    return '<div class="ticker"><div class="ticker-track" style="animation-duration:' + dur + 's">' + run + run + "</div></div>";
+    var tr = top.join(dot) + dot, br = bot.join("");
+    var h = css + '<div class="tkb"><div class="ticker tk-top"><div class="ticker-track" style="animation-duration:60s">' + tr + tr + "</div></div>";
+    if (bot.length) h += '<div class="ticker tk-bot" aria-hidden="true"><div class="ticker-track" style="animation-duration:' +
+      Math.max(70, nb * 10) + 's">' + br + br + "</div></div>";
+    return h + "</div>";
   }
 
   function crewBadges(hn) {
