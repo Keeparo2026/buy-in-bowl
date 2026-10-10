@@ -2697,17 +2697,145 @@
     });
   }
 
+  /* ---------- Head-to-head ---------- */
+  var h2hA = null, h2hB = null;
+
+  function h2hGames(a, b) {
+    var out = [];
+    years().forEach(function (y) {
+      var s = S[y] || {}, list = [];
+      (s.weeks || []).forEach(function (w) {
+        (w.matchups || []).forEach(function (g) { list.push({ g: g, label: "Week " + w.week, ord: +w.week }); });
+      });
+      ((s.playoffs || {}).games || []).forEach(function (g, i) {
+        list.push({ g: g, label: (g.round || "Playoffs") + (g.consolation ? " (consolation)" : ""), ord: 100 + i, po: true });
+      });
+      list.forEach(function (x) {
+        var g = x.g;
+        if (g.homeScore == null || g.awayScore == null || (!+g.homeScore && !+g.awayScore)) return;
+        var hm = teamManager(y, g.home), am = teamManager(y, g.away), sa, sb, ta, tb;
+        if (hm === a && am === b) { sa = +g.homeScore; sb = +g.awayScore; ta = g.home; tb = g.away; }
+        else if (hm === b && am === a) { sa = +g.awayScore; sb = +g.homeScore; ta = g.away; tb = g.home; }
+        else return;
+        out.push({ year: +y, label: x.label, ord: x.ord, po: !!x.po && !g.consolation, sa: sa, sb: sb, ta: ta, tb: tb });
+      });
+    });
+    return out.sort(function (p, q) { return q.year - p.year || q.ord - p.ord; });
+  }
+
+  function h2hNext(a, b) {
+    var cur = years()[0], up = (S[cur] || {}).upcoming;
+    if (!up || !up.matchups || up.week <= weeksPlayed(cur)) return null;
+    var hit = up.matchups.filter(function (g) {
+      var hm = teamManager(cur, g.home), am = teamManager(cur, g.away);
+      return (hm === a && am === b) || (hm === b && am === a);
+    })[0];
+    return hit ? up.week : null;
+  }
+
+  function renderH2H() {
+    var cur = years()[0], ms = L.managers || [];
+    var active = ms.filter(function (m) { return m.teams && m.teams[cur]; });
+    var former = ms.filter(function (m) { return !(m.teams && m.teams[cur]) && m.teams && Object.keys(m.teams).length; });
+    if (!h2hA || !h2hB) {
+      /* start with the first pairing of the coming week, else the top two of the table */
+      var up = (S[cur] || {}).upcoming, first = up && up.matchups && up.matchups[0];
+      if (first) { h2hA = teamManager(cur, first.home); h2hB = teamManager(cur, first.away); }
+      if (!h2hA || !h2hB) {
+        var st = (S[cur].standings || []);
+        h2hA = (st[0] || active[0] || {}).manager || (active[0] || {}).id;
+        h2hB = (st[1] || active[1] || {}).manager || (active[1] || {}).id;
+      }
+    }
+    var A = mgr(h2hA), B = mgr(h2hB);
+
+    function opts(sel, other) {
+      function o(m) {
+        return '<option value="' + esc(m.id) + '"' + (m.id === sel ? " selected" : "") + (m.id === other ? " disabled" : "") + ">" +
+          esc(m.name || m.id) + "</option>";
+      }
+      return '<optgroup label="' + cur + '">' + active.map(o).join("") + "</optgroup>" +
+        (former.length ? '<optgroup label="Former">' + former.map(o).join("") + "</optgroup>" : "");
+    }
+    function side(m, key, other, cls) {
+      var team = (m.teams || {})[cur] || (m.teams || {})[Object.keys(m.teams || {}).sort().pop()] || "";
+      return '<div class="hh-side ' + cls + '">' +
+        '<button type="button" class="hh-pic" data-profile="' + esc(m.id) + '" aria-label="Open profile of ' + esc(m.name || m.id) + '">' +
+        (has(m.avatar) ? '<img src="' + esc(m.avatar) + '" alt="">' : "") + "</button>" +
+        '<label class="hh-pick"><span class="sr">Manager</span><select data-h2h="' + key + '">' + opts(m.id, other) + "</select></label>" +
+        '<div class="hh-team">' + esc(team) + "</div></div>";
+    }
+
+    var games = h2hGames(h2hA, h2hB);
+    var wa = 0, wb = 0, t = 0, pa = 0, pb = 0, big = null;
+    games.forEach(function (g) {
+      if (g.sa > g.sb) wa++; else if (g.sb > g.sa) wb++; else t++;
+      pa += g.sa; pb += g.sb;
+      if (!big || Math.abs(g.sa - g.sb) > Math.abs(big.sa - big.sb)) big = g;
+    });
+    var next = h2hNext(h2hA, h2hB);
+
+    var h = '<div class="wrap page">';
+    h += '<div class="page-head"><h1 class="page-title">Head-to-head</h1>' +
+      '<p class="page-kicker">Pick two managers. Every game they have played against each other, playoffs included.</p></div>';
+    h += '<div class="hh-board">' + side(A, "a", h2hB, "l") +
+      '<div class="hh-mid"><div class="hh-score"><span class="' + (wa > wb ? "lead" : "") + '">' + wa + "</span><i>–</i>" +
+      '<span class="' + (wb > wa ? "lead" : "") + '">' + wb + "</span></div>" +
+      (t ? '<div class="hh-tie">' + t + (t === 1 ? " tie" : " ties") + "</div>" : "") +
+      '<button type="button" class="hh-swap" data-h2h-swap aria-label="Swap sides">⇄</button></div>' +
+      side(B, "b", h2hA, "r") + "</div>";
+
+    if (next) h += '<p class="hh-next">They meet again in Week ' + next + "." + "</p>";
+
+    if (!games.length) {
+      h += nothing("These two have never played each other.");
+      return h + "</div>";
+    }
+    var n = games.length;
+    h += '<div class="hh-stats">' +
+      '<div><small>Games</small><b>' + n + "</b></div>" +
+      '<div><small>Avg points</small><b>' + (pa / n).toFixed(1) + '<i>:</i>' + (pb / n).toFixed(1) + "</b></div>" +
+      '<div><small>Total points</small><b>' + num(pa, 0) + '<i>:</i>' + num(pb, 0) + "</b></div>" +
+      '<div><small>Biggest win</small><b>' + (big.sa === big.sb ? "–" : (big.sa > big.sb ? esc(A.name) : esc(B.name)) +
+        ' <em>+' + Math.abs(big.sa - big.sb).toFixed(2) + "</em>") + "</b></div></div>";
+
+    h += '<ol class="hh-list">';
+    games.forEach(function (g) {
+      var aw = g.sa > g.sb, bw = g.sb > g.sa;
+      h += '<li class="' + (g.po ? "po" : "") + '"><div class="hh-when"><b>' + g.year + "</b><span>" + esc(g.label) + "</span></div>" +
+        '<div class="hh-row"><span class="hh-t l' + (aw ? " w" : "") + '">' + esc(g.ta) + "</span>" +
+        '<span class="hh-s' + (aw ? " w" : "") + '">' + g.sa.toFixed(2) + "</span>" +
+        '<span class="hh-s' + (bw ? " w" : "") + '">' + g.sb.toFixed(2) + "</span>" +
+        '<span class="hh-t r' + (bw ? " w" : "") + '">' + esc(g.tb) + "</span></div></li>";
+    });
+    h += "</ol></div>";
+    return h;
+  }
+
+  document.addEventListener("change", function (e) {
+    var s = e.target && e.target.getAttribute && e.target.getAttribute("data-h2h");
+    if (!s) return;
+    if (s === "a") h2hA = e.target.value; else h2hB = e.target.value;
+    render("h2h", true);
+  });
+  document.addEventListener("click", function (e) {
+    if (!e.target || !e.target.closest || !e.target.closest("[data-h2h-swap]")) return;
+    var x = h2hA; h2hA = h2hB; h2hB = x;
+    render("h2h", true);
+  });
+
   /* ---------- Router ---------- */
   var current = "home";
 
   function render(route, keepScroll) {
-    current = ["table", "champions", "shame", "records", "stats", "drafts", "former"].indexOf(route) !== -1 ? route : "home";
+    current = ["table", "champions", "shame", "records", "stats", "drafts", "former", "h2h"].indexOf(route) !== -1 ? route : "home";
     root.innerHTML = current === "table" ? renderTable() :
                      current === "champions" ? renderChampions() :
                      current === "shame" ? renderShame() :
                      current === "stats" ? renderStats() :
                      current === "drafts" ? renderDrafts() :
                      current === "former" ? renderFormer() :
+                     current === "h2h" ? renderH2H() :
                      current === "records" ? renderRecords() : renderLanding();
     document.querySelectorAll("#nav [data-route]").forEach(function (b) {
       if (b.getAttribute("data-route") === current) b.setAttribute("aria-current", "page");
@@ -2728,7 +2856,7 @@
     var hh = location.hash || "";
     return /#\/table/.test(hh) ? "table" : /#\/champions/.test(hh) ? "champions" :
            /#\/records/.test(hh) ? "records" : /#\/shame/.test(hh) ? "shame" :
-           /#\/stats/.test(hh) ? "stats" : /#\/drafts/.test(hh) ? "drafts" : /#\/former/.test(hh) ? "former" : "home";
+           /#\/stats/.test(hh) ? "stats" : /#\/drafts/.test(hh) ? "drafts" : /#\/former/.test(hh) ? "former" : /#\/h2h/.test(hh) ? "h2h" : "home";
   }
 
   document.addEventListener("click", function (e) {
@@ -2790,6 +2918,7 @@
       '<button type="button" data-route="shame">Shame</button>' +
       '<button type="button" data-route="records">Records</button>' +
       '<button type="button" data-route="table">All-time</button>' +
+      '<button type="button" data-route="h2h">H2H</button>' +
       '<button type="button" data-route="stats">Stats</button>' +
       '<button type="button" data-route="drafts">Drafts</button>' +
       '<button type="button" data-route="former">Former</button>';
