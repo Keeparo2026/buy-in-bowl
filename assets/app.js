@@ -428,6 +428,41 @@
     return best === null ? "–" : best + '.<small>' + when + "</small>";
   }
 
+  /* Weekly rank: standings rebuilt after every regular-season week (wins, then points for), playoffs excluded */
+  var wrCache = {};
+  function weeklyRanks(y) {
+    if (wrCache[y]) return wrCache[y];
+    var s = S[y] || {}, rec = {}, out = { weeks: [], byMgr: {}, n: 0 };
+    (s.weeks || []).slice().sort(function (a, b) { return a.week - b.week; }).forEach(function (w) {
+      var ok = false;
+      (w.matchups || []).forEach(function (g) {
+        if (g.homeScore == null || g.awayScore == null || (!+g.homeScore && !+g.awayScore)) return;
+        ok = true;
+        [[g.home, +g.homeScore, +g.awayScore], [g.away, +g.awayScore, +g.homeScore]].forEach(function (x) {
+          var r = rec[x[0]] || (rec[x[0]] = { team: x[0], w: 0, pf: 0 });
+          r.pf += x[1];
+          r.w += x[1] > x[2] ? 1 : x[1] === x[2] ? 0.5 : 0;
+        });
+      });
+      if (!ok) return;
+      var order = Object.keys(rec).map(function (k) { return rec[k]; })
+        .sort(function (a, b) { return b.w - a.w || b.pf - a.pf; });
+      out.weeks.push(w.week);
+      out.n = Math.max(out.n, order.length);
+      order.forEach(function (r, i) {
+        var id = teamManager(y, r.team);
+        if (!id) return;
+        (out.byMgr[id] || (out.byMgr[id] = [])).push({ week: w.week, rank: i + 1 });
+      });
+    });
+    return (wrCache[y] = out);
+  }
+
+  function avgRank(list) {
+    if (!list || !list.length) return null;
+    return list.reduce(function (a, x) { return a + x.rank; }, 0) / list.length;
+  }
+
   function openProfile(id) {
     var m = mgr(id);
     if (!m.id) return;
@@ -475,7 +510,8 @@
         ["Rank", st.rank + '<small>/' + (S[cur].standings || []).length + "</small>"],
         ["Record", st.w + "-" + st.l + (st.t ? "-" + st.t : "")],
         ["Points", num(st.pf, 2)],
-        ["Avg", played ? (st.pf / played).toFixed(1) : "–"]
+        ["Avg", played ? (st.pf / played).toFixed(1) : "–"],
+        ["Avg rank", (function (v) { return v == null ? "–" : v.toFixed(1); })(avgRank((weeklyRanks(cur).byMgr || {})[id]))]
       ]);
     }
 
@@ -487,9 +523,15 @@
         ["Win %", all.games ? (all.pct * 100).toFixed(1) + "%" : "–"],
         ["Points", all.pf ? num(all.pf, 2) : "–"],
         ["Best finish", bestFinish(id)],
-        ["Titles", all.titles || "–"]
+        ["Titles", all.titles || "–"],
+        ["Avg rank", (function () {
+          var l = [];
+          years().forEach(function (y) { l = l.concat((weeklyRanks(y).byMgr || {})[id] || []); });
+          var v = avgRank(l);
+          return v == null ? "–" : v.toFixed(1) + '<small> · ' + l.length + ' wks</small>';
+        })()]
       ]);
-      h += '<p class="sp-note">Record includes the playoffs.</p>';
+      h += '<p class="sp-note">Record includes the playoffs. Avg rank: standings after every regular-season week (wins, then points for), playoffs excluded.</p>';
     }
 
     var names = Object.keys(m.teams || {}).sort();
