@@ -74,21 +74,22 @@ window.SEASONS[2026] = {
     { week: 4, order: ["Take Me To Dinner First", "TUSH PUSH", "Handegg United", "Luckyballzz7", "Twerk",
       "Gin&Jukes", "Rush Mode Isaac", "HutMessXpress", "Cee Dees TeeDees", "Julius's Juicemen"] },
     { week: 5, order: ["Take Me To Dinner First", "TUSH PUSH", "Twerk", "HutMessXpress", "Gin&Jukes", "Handegg United", "Luckyballzz7", "Rush Mode Isaac", "Cee Dees TeeDees", "Julius's Juicemen"] },
-    { week: 6, order: ["Take Me To Dinner First", "TUSH PUSH", "Handegg United", "Luckyballzz7", "HutMessXpress", "Twerk", "Gin&Jukes", "Rush Mode Isaac", "Julius's Juicemen", "Cee Dees TeeDees"] }
+    { week: 6, order: ["Take Me To Dinner First", "TUSH PUSH", "Handegg United", "Luckyballzz7", "HutMessXpress", "Twerk", "Gin&Jukes", "Rush Mode Isaac", "Julius's Juicemen", "Cee Dees TeeDees"] },
+    { week: 7, order: ["Take Me To Dinner First", "TUSH PUSH", "Handegg United", "Luckyballzz7", "HutMessXpress", "Twerk", "Gin&Jukes", "Rush Mode Isaac", "Julius's Juicemen", "Cee Dees TeeDees"] }
   ],
 
-  // Standings, currently after week 6
+  // Standings, currently after week 7
   standings: [
-    { rank: 1, team: "Take Me To Dinner First", manager: "dinner", w: 5, l: 1, t: 0, pf: 719.60 },
-    { rank: 2, team: "TUSH PUSH", manager: "tush", w: 5, l: 1, t: 0, pf: 686.02 },
-    { rank: 3, team: "Handegg United", manager: "johannes", w: 4, l: 2, t: 0, pf: 623.44 },
-    { rank: 4, team: "Luckyballzz7", manager: "nathan", w: 3, l: 3, t: 0, pf: 724.64 },
-    { rank: 5, team: "HutMessXpress", manager: "hutmess", w: 3, l: 3, t: 0, pf: 708.54 },
-    { rank: 6, team: "Twerk", manager: "twerk", w: 3, l: 3, t: 0, pf: 706.56 },
-    { rank: 7, team: "Gin&Jukes", manager: "gin", w: 3, l: 3, t: 0, pf: 655.38 },
-    { rank: 8, team: "Rush Mode Isaac", manager: "isaac", w: 2, l: 4, t: 0, pf: 636.60 },
-    { rank: 9, team: "Julius's Juicemen", manager: "julius", w: 1, l: 5, t: 0, pf: 584.38 },
-    { rank: 10, team: "Cee Dees TeeDees", manager: "ceedee", w: 1, l: 5, t: 0, pf: 580.94 }
+    { rank: 1, team: "Take Me To Dinner First", manager: "dinner", w: 6, l: 1, t: 0, pf: 832.94 },
+    { rank: 2, team: "TUSH PUSH", manager: "tush", w: 5, l: 2, t: 0, pf: 757.04 },
+    { rank: 3, team: "Handegg United", manager: "johannes", w: 5, l: 2, t: 0, pf: 724.66 },
+    { rank: 4, team: "Luckyballzz7", manager: "nathan", w: 4, l: 3, t: 0, pf: 852.72 },
+    { rank: 5, team: "HutMessXpress", manager: "hutmess", w: 4, l: 3, t: 0, pf: 827.20 },
+    { rank: 6, team: "Twerk", manager: "twerk", w: 3, l: 4, t: 0, pf: 774.98 },
+    { rank: 7, team: "Gin&Jukes", manager: "gin", w: 3, l: 4, t: 0, pf: 746.00 },
+    { rank: 8, team: "Rush Mode Isaac", manager: "isaac", w: 2, l: 5, t: 0, pf: 734.50 },
+    { rank: 9, team: "Julius's Juicemen", manager: "julius", w: 2, l: 5, t: 0, pf: 671.78 },
+    { rank: 10, team: "Cee Dees TeeDees", manager: "ceedee", w: 1, l: 6, t: 0, pf: 698.04 }
   ],
 
   playoffs: {
@@ -101,12 +102,12 @@ window.SEASONS[2026] = {
   },
 
   /* Next week's pairings, shown in the home ticker until the week is played */
-  upcoming: { week: 7, matchups: [
-    { home: "Handegg United", away: "TUSH PUSH" },
-    { home: "Gin&Jukes", away: "Take Me To Dinner First" },
-    { home: "Cee Dees TeeDees", away: "Luckyballzz7" },
-    { home: "HutMessXpress", away: "Rush Mode Isaac" },
-    { home: "Twerk", away: "Julius's Juicemen" }
+  upcoming: { week: 8, matchups: [
+    { home: "Handegg United", away: "Luckyballzz7" },
+    { home: "Gin&Jukes", away: "HutMessXpress" },
+    { home: "Cee Dees TeeDees", away: "Rush Mode Isaac" },
+    { home: "Take Me To Dinner First", away: "Twerk" },
+    { home: "TUSH PUSH", away: "Julius's Juicemen" }
   ] },
 
   /* Week by week. One entry per week.
@@ -220,6 +221,25 @@ window.SEASONS[2026] = {
         "Biggest blowout: Handegg United over Twerk by 53.64",
         "Closest game: TUSH PUSH over Cee Dees TeeDees by 4.62",
         "Julius's Juicemen get their first win of the season; Cee Dees TeeDees drop to last place"
+      ],
+      quotes: []
+    },
+    {
+      week: 7,
+      headline: "",
+      matchups: [
+        { home: "Handegg United", away: "TUSH PUSH", homeScore: 101.22, awayScore: 71.02 },
+        { home: "Gin&Jukes", away: "Take Me To Dinner First", homeScore: 90.62, awayScore: 113.34 },
+        { home: "Cee Dees TeeDees", away: "Luckyballzz7", homeScore: 117.10, awayScore: 128.08 },
+        { home: "HutMessXpress", away: "Rush Mode Isaac", homeScore: 118.66, awayScore: 97.90 },
+        { home: "Twerk", away: "Julius's Juicemen", homeScore: 68.42, awayScore: 87.40 }
+      ],
+      notes: [
+        "Winners: Handegg United, Take Me To Dinner First, LuckyBallzz7, HutMessXpress, Julius's Juicemen",
+        "Top score: LuckyBallzz7 128.08",
+        "Biggest blowout: Handegg United over TUSH PUSH by 30.20",
+        "Closest game: LuckyBallzz7 over Cee Dees TeeDees by 10.98",
+        "Take Me To Dinner First sits alone at the top (6-1); Julius's Juicemen win their second straight"
       ],
       quotes: []
     }
