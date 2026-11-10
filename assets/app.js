@@ -1881,7 +1881,7 @@
         return av < bv ? dir : av > bv ? -dir : 0;
       }
       if (k === "place") return (a.place - b.place) * dir || b.wins - a.wins;
-      if (k === "power") return (b.titles - a.titles || b.pf - a.pf || b.wins - a.wins) * -dir;
+      if (k === "power") return (b.titles - a.titles || b.wins - a.wins || b.pf - a.pf) * -dir;
       return ((a[k] || 0) - (b[k] || 0)) * dir || b.wins - a.wins || b.pf - a.pf;
     });
     return rows;
@@ -2010,7 +2010,7 @@
   var reflowDepth = 0;
   function powerRank(rows) {
     return rows.slice().sort(function (a, b) {
-      return b.titles - a.titles || b.pf - a.pf || b.wins - a.wins ||
+      return b.titles - a.titles || b.wins - a.wins || b.pf - a.pf ||
         String(a.label).localeCompare(String(b.label));
     });
   }
