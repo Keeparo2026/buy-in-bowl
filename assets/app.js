@@ -1694,6 +1694,88 @@
 
   function book(key) { return (L.records || []).filter(function (r) { return r.key === key; })[0]; }
 
+  /* Matchup of the Week: the game between the two best-placed teams before the week
+     (smallest sum of standings places, wins then points for; tie -> more combined points).
+     Regular season from week 2, so every pick has standings behind it. */
+  var motwCache = {};
+  function motwList(y) {
+    if (motwCache[y]) return motwCache[y];
+    var s = S[y] || {}, rec = {}, out = [];
+    (s.weeks || []).slice().sort(function (a, b) { return a.week - b.week; }).forEach(function (w) {
+      if (w.week > 14) return;
+      var gs = (w.matchups || []).filter(function (g) {
+        return g.homeScore != null && g.awayScore != null && (+g.homeScore || +g.awayScore);
+      });
+      if (!gs.length) return;
+      if (w.week > 1) {
+        var order = Object.keys(rec).map(function (k) { return rec[k]; })
+          .sort(function (a, b) { return b.w - a.w || b.pf - a.pf; }).map(function (r) { return r.team; });
+        var rk = function (t) { var i = order.indexOf(t); return i < 0 ? 99 : i + 1; };
+        var pf = function (t) { return rec[t] ? rec[t].pf : 0; };
+        var best = gs.slice().sort(function (a, b) {
+          return (rk(a.home) + rk(a.away)) - (rk(b.home) + rk(b.away)) ||
+            (pf(b.home) + pf(b.away)) - (pf(a.home) + pf(a.away));
+        })[0];
+        var hw = +best.homeScore > +best.awayScore;
+        out.push({ week: w.week, home: best.home, away: best.away, hs: +best.homeScore, as: +best.awayScore,
+                   hr: rk(best.home), ar: rk(best.away),
+                   win: hw ? best.home : best.away, lose: hw ? best.away : best.home });
+      }
+      gs.forEach(function (g) {
+        [[g.home, +g.homeScore, +g.awayScore], [g.away, +g.awayScore, +g.homeScore]].forEach(function (x) {
+          var r = rec[x[0]] || (rec[x[0]] = { team: x[0], w: 0, pf: 0 });
+          r.pf += x[1];
+          r.w += x[1] > x[2] ? 1 : x[1] === x[2] ? 0.5 : 0;
+        });
+      });
+    });
+    return (motwCache[y] = out);
+  }
+
+  function motwSection() {
+    var ys = years().slice().sort(function (a, b) { return a - b; }), tally = {};
+    ys.forEach(function (y) {
+      motwList(y).forEach(function (g) {
+        [g.win, g.lose].forEach(function (t) {
+          var id = teamManager(y, t);
+          if (!id) return;
+          var r = tally[id] || (tally[id] = { id: id, w: 0, l: 0, by: {} });
+          var b = r.by[y] || (r.by[y] = { w: 0, l: 0 });
+          if (t === g.win) { r.w++; b.w++; } else { r.l++; b.l++; }
+        });
+      });
+    });
+    var rows = Object.keys(tally).map(function (k) { return tally[k]; })
+      .sort(function (a, b) { return b.w - a.w || a.l - b.l; });
+    if (!rows.length) return "";
+    var h = '<section class="block"><h2 class="sec">Matchup of the Week</h2>';
+    h += '<div class="table-scroll"><table class="champs-table"><thead><tr><th>Manager</th>' +
+      '<th class="num">Won</th><th class="num">Lost</th>';
+    ys.forEach(function (y) { h += '<th class="num">' + y + "</th>"; });
+    h += "</tr></thead><tbody>";
+    rows.forEach(function (r) {
+      var mm = mgr(r.id);
+      h += '<tr><td><div class="cwho" data-profile="' + r.id + '">' +
+        (has(mm.face || mm.avatar) ? '<img class="avatar" src="' + esc(mm.face || mm.avatar) + '" alt="">' : "") +
+        '<span class="mtxt"><span class="mname">' + esc(mm.name || r.id) + flagFor(r.id) + "</span></span></div></td>" +
+        '<td class="num"><b>' + r.w + '</b></td><td class="num">' + r.l + "</td>";
+      ys.forEach(function (y) {
+        var b = r.by[y];
+        h += '<td class="num">' + (b ? b.w + "-" + b.l : "–") + "</td>";
+      });
+      h += "</tr>";
+    });
+    h += "</tbody></table></div>";
+    var cur = ys[ys.length - 1], last = motwList(cur).slice(-1)[0];
+    if (last) {
+      h += '<p class="hint">Latest: week ' + last.week + ", " + esc(last.win) + " over " + esc(last.lose) + " " +
+        num(Math.max(last.hs, last.as), 2) + "–" + num(Math.min(last.hs, last.as), 2) + ".</p>";
+    }
+    h += '<p class="hint">Matchup of the Week is the game between the two best-placed teams going into the week ' +
+      "(standings by wins, then points for). Regular season from week 2.</p></section>";
+    return h;
+  }
+
   function renderRecords() {
     var h = '<div class="wrap page">';
     h += '<div class="page-head"><h1 class="page-title">Records</h1>' +
@@ -1774,6 +1856,8 @@
       }
     });
     h += "</tbody></table></div></section>";
+
+    h += motwSection();
 
     /* --- all-time --- */
     var car = careers("all");
