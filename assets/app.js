@@ -1695,8 +1695,9 @@
   function book(key) { return (L.records || []).filter(function (r) { return r.key === key; })[0]; }
 
   /* Matchup of the Week: the game between the two best-placed teams before the week
-     (smallest sum of standings places, wins then points for; tie -> more combined points).
-     Regular season from week 2, so every pick has standings behind it. */
+     (smallest sum of standings places, wins then points for; tie -> closer places, then more points).
+     Matches Yahoo's picks for 2026 weeks 2-11. Week 1 has no standings, so Yahoo's pick is set here. */
+  var MOTW_SET = { 2026: { 1: ["Twerk", "Gin&Jukes"] } };
   var motwCache = {};
   function motwList(y) {
     if (motwCache[y]) return motwCache[y];
@@ -1707,13 +1708,22 @@
         return g.homeScore != null && g.awayScore != null && (+g.homeScore || +g.awayScore);
       });
       if (!gs.length) return;
-      if (w.week > 1) {
+      var fixed = (MOTW_SET[y] || {})[w.week];
+      if (fixed) {
+        var fg = gs.filter(function (g) { return fixed.indexOf(g.home) !== -1 && fixed.indexOf(g.away) !== -1; })[0];
+        if (fg) {
+          var fw = +fg.homeScore > +fg.awayScore;
+          out.push({ week: w.week, home: fg.home, away: fg.away, hs: +fg.homeScore, as: +fg.awayScore,
+                     win: fw ? fg.home : fg.away, lose: fw ? fg.away : fg.home });
+        }
+      } else if (w.week > 1) {
         var order = Object.keys(rec).map(function (k) { return rec[k]; })
           .sort(function (a, b) { return b.w - a.w || b.pf - a.pf; }).map(function (r) { return r.team; });
         var rk = function (t) { var i = order.indexOf(t); return i < 0 ? 99 : i + 1; };
         var pf = function (t) { return rec[t] ? rec[t].pf : 0; };
         var best = gs.slice().sort(function (a, b) {
           return (rk(a.home) + rk(a.away)) - (rk(b.home) + rk(b.away)) ||
+            Math.abs(rk(a.home) - rk(a.away)) - Math.abs(rk(b.home) - rk(b.away)) ||
             (pf(b.home) + pf(b.away)) - (pf(a.home) + pf(a.away));
         })[0];
         var hw = +best.homeScore > +best.awayScore;
@@ -1745,25 +1755,19 @@
         });
       });
     });
-    var rows = Object.keys(tally).map(function (k) { return tally[k]; })
-      .sort(function (a, b) { return b.w - a.w || a.l - b.l; });
+    var rows = Object.keys(tally).map(function (k) { var r = tally[k]; r.g = r.w + r.l; r.p = r.g ? r.w / r.g : 0; return r; })
+      .sort(function (a, b) { return b.g - a.g || b.p - a.p || b.w - a.w; });
     if (!rows.length) return "";
     var h = '<section class="block"><h2 class="sec">Matchup of the Week</h2>';
-    h += '<div class="table-scroll"><table class="champs-table"><thead><tr><th>Manager</th>' +
-      '<th class="num">Won</th><th class="num">Lost</th>';
-    ys.forEach(function (y) { h += '<th class="num">' + y + "</th>"; });
-    h += "</tr></thead><tbody>";
-    rows.forEach(function (r) {
+    h += '<div class="table-scroll"><table class="champs-table"><thead><tr><th class="num">#</th><th>Manager</th>' +
+      '<th class="num">Games</th><th class="num">Won</th><th class="num">Win %</th></tr></thead><tbody>';
+    rows.forEach(function (r, i) {
       var mm = mgr(r.id);
-      h += '<tr><td><div class="cwho" data-profile="' + r.id + '">' +
+      h += '<tr><td class="num">' + (i + 1) + '</td><td><div class="cwho" data-profile="' + r.id + '">' +
         (has(mm.face || mm.avatar) ? '<img class="avatar" src="' + esc(mm.face || mm.avatar) + '" alt="">' : "") +
         '<span class="mtxt"><span class="mname">' + esc(mm.name || r.id) + flagFor(r.id) + "</span></span></div></td>" +
-        '<td class="num"><b>' + r.w + '</b></td><td class="num">' + r.l + "</td>";
-      ys.forEach(function (y) {
-        var b = r.by[y];
-        h += '<td class="num">' + (b ? b.w + "-" + b.l : "–") + "</td>";
-      });
-      h += "</tr>";
+        '<td class="num"><b>' + r.g + '</b></td><td class="num">' + r.w + '</td><td class="num">' +
+        (r.p * 100).toFixed(0) + "%</td></tr>";
     });
     h += "</tbody></table></div>";
     var cur = ys[ys.length - 1], last = motwList(cur).slice(-1)[0];
@@ -1772,7 +1776,7 @@
         num(Math.max(last.hs, last.as), 2) + "–" + num(Math.min(last.hs, last.as), 2) + ".</p>";
     }
     h += '<p class="hint">Matchup of the Week is the game between the two best-placed teams going into the week ' +
-      "(standings by wins, then points for). Regular season from week 2.</p></section>";
+      "(standings by wins, then points for), the same pick Yahoo shows. Regular season only.</p></section>";
     return h;
   }
 
